@@ -1,0 +1,747 @@
+<!DOCTAPE html>
+<html>
+<head>
+<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;padding:0;background:green}
+button{
+background:#96b52d;
+width:80;height:80;}
+div.bu{
+position:absolute;bottom:10%;
+}
+button.bu{opacity:80%;}
+
+#tool{
+position:fixed;top:10;right:10;color:#fff;font-size:32px;background:black;opacity:80%
+}
+#set{
+    display:none;
+    max-width:500px;width:90%;
+    height:300px;
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    margin:auto auto;
+    background:#ffffff;
+    padding:5px;
+    border:1px solid #000;border-radius:10px;-moz-border-radius:10px;
+    overflow: scroll;
+    opacity:50%
+}
+button{
+font-size:24px
+}
+
+
+
+hr {
+    height:1px;
+    border:none;
+    border-top:3px dashed #df0000;
+}
+.dt {
+    background:#cfa;/*(#000)。#efff6d黄)*/
+    box-sizing:boder-box;
+    left:0;
+    right:0;
+    top:0;
+    position:absolute;
+    padding:0px;
+    color:#f90;/*f00*/
+    height:80px;
+}
+/*class dt是网页顶部导航栏，dttb是3条横线*/
+.dttb {
+    left:0;
+    right:0;
+    bottom:0;
+    height:4px;
+    background:#cfa;
+    border-top:4px solid #f90;
+    border-bottom:4px solid #f90;
+}
+/*dbom是写内容的div框的父元素。dbo1是写内容的div。*/
+.dbom {
+    position:absolute;top:100;left:0;right:0;
+    width:100%
+    /*margin:100 0;background:#fff;width:100%;*/
+}
+.dbo1 {
+    max-width:925px;width:90%;
+    border:1px solid #f90;
+    border-radius:10px;-moz-border-radius:10px;
+    padding:10px;
+    color:#f90;
+    background:#aff;
+    margin:0 auto;
+    /*flex-wrap:wrap;
+    display:flex;*/
+}
+/*tomain是回到主页按钮*/
+div.tomain {
+    float:left;
+    height:65px;
+    width:65px;
+    text-align:center;
+    border:3px double #e53333;
+}
+a.tomain {
+    color:#ff0000;
+    font-size:55px;
+    margin:0 auto;
+    transition:color 0.5s,font-weight 0.5s;
+}
+a.tomain:hover {
+    color:#ff5555;
+    /*font-weight:bold;*/
+}
+.tdtx {
+    font-size:60px;
+    /*font-weight:bold;*/
+    font-family:maoti;
+}/* tdtx是“红狼网”样式 */
+div.dldad{
+/* div.download的父元素 */
+    display:flex;
+    flex-flow:row wrap;
+    justify-content:space-around;
+}
+div.download {
+    
+    background:#000000;border:1px solid #ff0000;
+    width:350px;
+    text-align:left;
+    padding:10px;
+    box-sizing:border-box;
+    margin:4px;
+}
+.dona{
+    font-weight:bold;
+    font-size:18px;
+    line-height:7px;
+}/*下载的项目名字*/
+.domi{
+    line-height:7px;
+    color:;
+}/*下载的项目描述等*/
+img.download{
+    width:98%;
+    height:270px;
+    margin:0 auto;
+}
+button.download {
+    background:#e53333;
+    float:right;
+}
+.star{transition:font-size 1s;}
+.star:hover{font-size:32px;}
+/*tool为悬浮的工具栏*/
+.tool{
+    /*display:none;*/
+    position:fixed;
+    top:15;right:15;
+    background:;opacity:50%;
+    /*width:55px;height:50px;*/
+    transition:1s;
+}
+.showtool{
+    opacity:90%;
+}
+.showtool .sp1{
+    transition:1s;
+}
+.tool1{
+    border:2px solid #ff0000;
+    background:#FFFFFF;
+    text-align:center;
+    width:50px;height:50px;
+    box-sizing:border-box;
+    line-height:50px;
+}
+.tool2{
+    display:none;
+    transition:1s;
+    opacity:10%;
+}
+.ticon{/*工具栏图标*/
+    font-size:45px;
+    font-weight:bold;
+    color:#333333;
+}
+.tool:hover .tool1{
+    display:block;
+    opacity:90%;
+}
+.tool:hover .sp1{
+    transform: rotate(180deg);
+    -ms-transform: rotate(180deg); /* IE 9 */
+    -webkit-transform: rotate(180deg); /* Safari and Chrome */
+}
+/*set是设置弹窗*/
+#set{
+    display:none;
+    max-width:500px;width:90%;
+    height:300px;
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    margin:auto auto;
+    background:#ffffff;
+    padding:5px;
+    border-radius:10px;-moz-border-radius:10px;
+    overflow: scroll;
+}
+#set .hs{
+    float:right;
+}
+div.sesw{
+    border-bottom:1px solid #ccc;
+    height:40px;
+}
+/*.switch开关*/
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 30px;
+  float:right;
+}
+.switch input {
+    display:none;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: #ff0000;
+  /*background-color: #2196F3;*/
+}
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+.slider.round {
+  border-radius: 34px;
+}
+.slider.round:before {
+  border-radius: 50%;
+}
+/*字体*/
+/*@font-face {
+    font-family: maoti;
+    src: url()
+}*/
+</style>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
+</head>
+<body>
+<!--html-->
+<noscript>noscript</noscript>
+<div id="tool" onclick="tool('block')"><i class="fa fa-gear"></i></div>
+<div id="set"></div>
+<div class="bu">
+<button class="bu" id="bu1">bu1</button>
+<button class="bu" id="bu2">bu2</button>
+<button class="bu" id="bu3">bu3</button>
+<button class="bu" id="bu4">bu4</button>
+<button class="bu" id="bu5">bu5</button>
+<button class="bu" id="bu6">bu6</button>
+<button class="bu" id="bu7">bu7</button>
+<button class="bu" id="bu8">bu8</button>
+<button class="bu" id="bu9">bu9</button>
+</div>
+<br>
+<input type="text" onchange="eval(this.value)">
+<canvas id="canvas" width="1200" height="675" style="width:100%;">你的浏览器不支持canvas</canvas>
+<script src="matter.js"></script>
+<!-- <script src="matter.min.js"></script> -->
+<script src="matter-spring.js"></script>
+<script src="tool.js"></script>
+<script>
+if(true){document.getElementById("set").innerHTML='<div style="text-align:center;">设置<div class="hs"><a onclick="tool(\'none\')"><i class="fa fa-times"></i></a></div></div><hr style="height:1px;border:none;border-top:1px solid #ccc;"/><div class="sesw">开关示例<label class="switch"><input id="seta" type="checkbox" onchange="timesp()"><div class="slider round"></div></label><div id="log"></div></div>';alert(90);tool("block")}
+function tool(display){
+document.getElementById("set").style.display=display;
+}
+
+//matter0.19
+// module模块 aliases
+var Engine = Matter.Engine,
+    Render = Matter.Render,
+    Runner = Matter.Runner,
+    Bodies = Matter.Bodies,
+    Constraint = Matter.Constraint,//约束
+    Composite = Matter.Composite,
+    Composites = Matter.Composites,
+    Body = Matter.Body,
+    MouseConstraint = Matter.MouseConstraint,
+    Mouse = Matter.Mouse,
+    Events = Matter.Events,
+    Example = Matter.Example;
+    
+Matter.use('matter-springs');//弹簧插件
+
+// create an engine
+var engine = Engine.create();
+
+// create a renderer
+var render = Render.create({
+    canvas: document.getElementById("canvas"),
+    //element: document.body,
+    engine: engine,
+    options: {
+        width: 1200,
+        height: 675,
+        background:"#ccc",
+        showAngleIndicator: true,
+        showDebug:true,
+        showIds: true,
+         wireframes: true//线框模式
+    }
+});
+
+
+
+</script>
+
+<script src="objects.js"></script>
+<!--/*  贴图等  */-->
+
+<script>
+var lattice;lattice=100;
+var thingss = new Array();
+var boxss = new Array();
+var thingssxy = new Array();
+var boxssxy = new Array();
+class Things {
+  constructor(xy,radius,rd) {
+    this.xy = xy;
+    this.radius=radius;
+    this.render = rd;
+  }
+  addbd(bd,xy) {
+    thingss.push(bd);
+    thingssxy.push(xy);
+  }
+}
+class Box extends Things {
+  constructor(xy,rd) {
+    super(xy,undefined,rd);
+  }
+  create() {
+    let bd=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
+    boxss.push(bd);
+    boxssxy.push(this.xy);
+  }
+}
+class Circle extends Things {
+  constructor(xy,radius,rd) {
+    super(xy,undefined,rd);
+  }
+  create() {
+    let bd= Bodies.circle(this.x*lattice, this.y*lattice, this.radius, this.render);
+    this.addbd(bd,this.xy);
+  }
+}
+function thingsadd(things){things.create();}
+try{
+thingsadd(new Box({0,0},renders.febox0));
+thingsadd(new Circle({0,0},renders.egg0));
+}catch(e){logs(e)}
+var bodyss=thingss.concat(boxss);
+
+
+//bodyss是数组，内含多个对象。数组可能上百，甚至可能上千，取决于用户，没有上限。尽量提升性能。
+//对象中含有box与things两种，这里已经合并，但也许有更好的写法？一个box和另一个box坐标不会重合，things同理，但一个box和一个things的坐标可以重叠
+//var a=new Array();
+//数组内双向对比，给b赋值重复出现的值。
+//var b=duplicates(a);
+
+try{
+//连接框与其内物
+function compareAr(arr1, arr2) {
+  return arr1.filter((v) => {
+    return arr2.indexOf(v) !== -1;
+  });
+}
+var b=compareAr(boxssxy, thingssxy);
+for(var i=0;i<b.length;i++){
+    createcst(boxss[boxssxy.indexOf(b[i])],thingssxy[thingss.indexOf(b[i])],0,1,1);
+} 
+}catch(e){logs(e)}
+var c0=boxssxy.map(boxssxy => {...boxssxy,x:boxssxy.x+1});
+var c=compareAr(boxssxy,c0);//x轴连接
+var d0=boxssxy.map(boxssxy => {...boxssxy,y:boxssxy.y+1});
+var d=compareAr(boxssxy,d0);//y轴连接
+for(var i=0;i<c.length;i++){
+    connectAB(boxss[boxssxy.indexOf(c[i])],boxss[boxssxy.indexOf(c0[i])],0,1,1);
+}
+for(var i=0;i<d.length;i++){
+    connectAB(boxss[boxssxy.indexOf(d[i])],boxss[boxssxy.indexOf(d0[i])],0,1,1);
+}
+
+
+//function duplicates(arr) {
+//    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
+//}
+
+
+function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
+    let Body = Matter.Body,
+        Bodies = Matter.Bodies,
+        Composite = Matter.Composite,
+        Constraint = Matter.Constraint;
+
+    var group = Body.nextGroup(true),
+        wheelBase = 60,
+        wheelAOffset = -height * 0.5 + wheelBase,
+        wheelXOffset = 0;
+    
+    objectB=objectB || {};
+    objectW=objectW || {};
+    let mwheel0 = Composite.create({ label: 'mwheel0' }),
+        body = Bodies.trapezoid(xx, yy, width, height, -10, {
+            render:objectB,
+            collisionFilter: {
+                group: group
+            }//,chamfer: {radius: height * 0.5},density: 0.0002
+        });
+
+    let wheelA = Bodies.circle(xx + wheelXOffset, yy + wheelAOffset, wheelSize, { 
+        render:objectW,
+        collisionFilter: {
+            group: group
+        },
+        friction: 0.8
+    });
+
+    let axelA = Constraint.create({
+        bodyA: wheelA,
+        bodyB: body,
+        pointB: { x: wheelXOffset, y: wheelAOffset },
+        stiffness: 1,
+        length: 0
+    });
+                    
+    
+    Composite.addBody(mwheel0, body);
+    Composite.addBody(mwheel0, wheelA);
+    Composite.addConstraint(mwheel0, axelA);
+
+    return mwheel0;
+};//生成轮子
+
+function createcst(bodya,bodyb,move,stiffness,angularStiffness,length,movem){
+    //create new Constraint
+    let xx = 0,
+        yy = 0,
+        xb=0,
+        yb=0;
+    movem=movem || 20
+    return Constraint.create({
+        pointA: { x: xx, y: yy },
+        pointB: { x: xb, y: yb },
+        bodyA: bodya,
+        bodyB: bodyb,
+        stiffness: stiffness,
+        angularStiffness: angularStiffness,
+        damping: 0,
+        length: length,
+        type: 'constraint'
+    });
+}
+function createcst2(bodya,bodyb,pointa,stiffness,angularStiffness,length){
+    //create new Constraint
+    return Constraint.create({
+        pointA: pointa,
+        pointB: { 
+            x: pointa.y===30||-30 ? -pointa.x : -pointa.y, 
+            y: pointa.x===30||-30 ? -pointa.y : -pointa.x 
+        },
+        bodyA: bodya,
+        bodyB: bodyb,
+        stiffness: stiffness,
+        angularStiffness: angularStiffness,
+        length: length,
+        type: 'constraint'
+    });
+}
+
+function connectAB(bodya,bodyb,pointa,stiffness){
+    if(pointa.x!==0){xx=pointa.x;xb=xx;yy=20;yb=-20;}
+    else{xx=20;xb=-20;yy=pointa.y;yb=yy;}
+    return [createcst2(bodya,bodyb,{x:xx,y:yy},stiffness,0.7),
+    createcst2(bodya,bodyb,pointa,stiffness,0.7),
+    createcst2(bodya,bodyb,{x:xb,y:yb},stiffness,0.7)]
+}
+/*try{
+var mouse = Mouse.create(render),
+mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.2,
+        render: {
+            visible: false
+        }
+    }
+});
+Composite.add(engine.world, mouseConstraint);
+render.mouse = mouse;
+}catch(e){logs(e)}*/
+
+//var ww=wwheel(000,271,9,58,34,renders.wsjx.render,renders.wcircle.render);
+//Composite.rotate( ww, Math.PI/4, {x:50,y:50}, false);
+//Composite.add(engine.world, ww)
+
+var we=wwheel(2*lattice,270,8.5,58,34,renders.wsjx.render,renders.wcircle.render);
+//Composite.rotate( we, Math.PI/2, {x:0,y:0}, false);
+
+
+// createing 创建物品
+var mubox0 = Bodies.rectangle(2*lattice, 2*lattice, 1*lattice, 1*lattice,renders.mubox0);//0木框
+var febox0 = Bodies.rectangle(3*lattice, 2*lattice, 1*lattice, 1*lattice,renders.febox0);//0铁框
+var spring = Bodies.rectangle(200, 100, 70, 100, renders.spring);//0弹簧
+var ground = Bodies.rectangle(400, 610, 9910, 60, { isStatic: true });//地面
+var pig0 = Bodies.circle(2*lattice, 2*lattice, 45, renders.pig0);//0猪
+var egg0 = Bodies.circle(3*lattice, 2*lattice, 45, renders.egg0);//0鸟蛋
+var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, renders.dp0)
+
+var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
+//Composite.add(engine.world, [circleth]);
+
+/*****/var particleOptions = {
+/**/    friction: 0.05,
+/**/    frictionStatic: 0.1,
+/**/    render: { visible: true } 
+/**/};//圆摩擦力
+/**/var constraintOptions = {
+/**/    render: { visible: true }
+/**/};//约束线
+/*****/var softBody = Composites.softBody(100, 400, 20, 4, 0, 5, true, 15, particleOptions, constraintOptions);//软体
+
+/*Matter.Plugin.springs = [
+  Spring.create({
+    bodyA: circleth, 
+    pointB: {x: 200, y: 200}, 
+    stiffness: 0.5, 
+    damping: 1
+  })
+];//弹簧*/
+
+
+//堆彻
+/*
+var stack = Composites.stack(550, 100, 4, 3, 1, 0, function(x, y) {
+  return Bodies.rectangle(x, y, 40, 20, {
+    render: {
+      fillStyle: 'orange',
+      strokeStyle: 'black'
+    }
+  });
+});//堆彻
+*/
+
+/*
+var wsjx=Bodies.trapezoid(00,71,9,58,-10,renders.wsjx);//三角形
+//两者的group相等且小于0时不碰撞
+var wcircle = Bodies.circle(200, 330, 34,renders.wcircle);//轮圆
+var mcst = Constraint.create({
+    pointA: { x: 0, y: 30 },
+    bodyA: wsjx,
+    bodyB: wcircle,
+    stiffness: 0.5,
+    length: 0,
+    type: 'constraint'
+});//轮约束
+var mwheel = Composite.create({
+    label: 'Mwheel',
+    parent:engine.world
+});//轮复合体
+//mwheel[1]=Composite.create({
+//    label: 'Mwheel',
+//    parent:engine.world
+//});
+Composite.add(mwheel,[wsjx,wcircle,mcst])
+*/
+    /**添加鼠标控制*/
+    /*var mouseConstraint = Matter.MouseConstraint.create(engine, {
+        element: document.body
+    });*/
+
+//var wsjx2=Bodies.trapezoid(300,271,9,58,-10,renders.wsjx);//三角形
+//两者的group相等且小于0时不碰撞
+//var wcircle2 = Bodies.circle(300, 330, 34,renders.wcircle);//轮圆
+/*var mcst2 = Constraint.create({
+    pointA: { x: 0, y: 30 },
+    bodyA: wsjx2,
+    bodyB: wcircle2,
+    stiffness: 0.5,
+    length: 0,
+    type: 'constraint'
+});//轮约束*/
+var mwheel2 = wwheel(3*lattice,270,8.5,58,34,renders.wsjx.render,renders.wcircle.render);
+/*Composite.create({
+    label: 'Mwheel',
+    parent:engine.world
+});//轮复合体*/
+/*mwheel[1]=Composite.create({
+    label: 'Mwheel',
+    parent:engine.world
+});*/
+//Composite.add(mwheel2,[wsjx2,wcircle2,mcst2])
+
+var acst = new Array();
+acst[0]=createcst(pig0,mubox0,0,1,1);
+acst[1]=createcst(egg0,febox0,0,1,1);
+//acst[2]=createcst(pig0,mubox0,1,1,1);
+//acst[3]=createcst(egg0,febox0,1,1,1);
+var bcst = new Array();
+bcst=bcst.concat(connectAB(febox0,mubox0,{x:-30,y:0},1))
+bcst=bcst.concat(connectAB(mubox0,Composite.allBodies(we)[0],{x:0,y:20},0.3))
+bcst=bcst.concat(connectAB(mubox0,dpen,{x:-30,y:0},0.4))
+var wsjx2=Composite.allBodies(mwheel2)[0]
+bcst=bcst.concat(connectAB(febox0,wsjx2,{x:0,y:20},0.4))
+//添加所有物品到world里
+Composite.add(engine.world, [mubox0, febox0, ground, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
+Composite.add(engine.world, acst.concat(bcst))
+Composite.add(engine.world, bodyss)
+
+
+//Composite.add(engine.world,[softBody,spring])
+
+//运行(渲染)renderer
+//Render.run(render);
+//创建runner
+//var runner = Runner.create();
+//运行engine
+//Runner.run(runner, engine);
+
+Engine.run(engine);
+Render.run(render);
+
+//Render.lookAt(render,{min:100,max:500})
+
+
+/*Events.on(render, 'beforeRender', function() {
+        var world = engine.world,
+            mouse = mouseConstraint.mouse,
+            translate;
+
+        // mouse wheel controls zoom
+        var scaleFactor = mouse.wheelDelta * -0.1;
+        if (scaleFactor !== 0) {
+            if ((scaleFactor < 0 && boundsScale.x >= 0.6) || (scaleFactor > 0 && boundsScale.x <= 1.4)) {
+                boundsScaleTarget += scaleFactor;
+            }
+        }
+
+        // if scale has changed
+        if (Math.abs(boundsScale.x - boundsScaleTarget) > 0.01) {
+            // smoothly tween scale factor
+            scaleFactor = (boundsScaleTarget - boundsScale.x) * 0.2;
+            boundsScale.x += scaleFactor;
+            boundsScale.y += scaleFactor;
+
+            // scale the render bounds
+            render.bounds.max.x = render.bounds.min.x + render.options.width * boundsScale.x;
+            render.bounds.max.y = render.bounds.min.y + render.options.height * boundsScale.y;
+
+            // translate so zoom is from centre of view
+            translate = {
+                x: render.options.width * scaleFactor * -0.5,
+                y: render.options.height * scaleFactor * -0.5
+            };
+
+            Bounds.translate(render.bounds, translate);
+
+            // update mouse
+            Mouse.setScale(mouse, boundsScale);
+            Mouse.setOffset(mouse, render.bounds.min);
+        }*/
+
+document.getElementById("bu1").addEventListener('click', function () {
+    //Body.scale( mubox0, 1.5, 1.2);//放大
+    //doing()
+    //Composite.move(mwheel,wsjx,engine.world)
+    //Composite.remove(mwheel,mcst)
+    Matter.Body.setStatic(body, true)
+});
+document.getElementById("bu2").addEventListener('click', function () {//旋转
+    Body.rotate( pig0, Math.PI/50);
+});
+document.getElementById("bu3").addEventListener('click', function () {//移动
+    Body.translate( mubox0, {x: 40, y: -20});
+});
+document.getElementById("bu4").addEventListener('click', function () {//移动速度
+    Body.setVelocity( mubox0, {x: 00, y: -20});
+    Body.setVelocity( febox0, {x: 00, y: 20});
+    Body.setVelocity( pig0, {x: 10, y: -10});
+});
+document.getElementById("bu5").addEventListener('click', function () {//旋转速度
+    Body.setAngularVelocity( Composite.allBodies(mwheel2)[1], Math.PI/10);
+    //Body.setAngularVelocity( mubox0, Math.PI/6);
+});
+document.getElementById("bu6").addEventListener('click', function () {//施加力向右
+    addforce(dpen,0.44);
+    //Body.applyForce( obja, {x: obja.position.x, y: obja.position.y}, {x: 0.44, y: 0});
+});
+document.getElementById("bu7").addEventListener('click', function () {//向上力
+    addforce(pig0,-0.44);
+});
+document.getElementById("bu8").addEventListener('click', function () {//摩擦
+  pig0.friction = 0.05;
+  pig0.frictionAir = 0.0005;
+  pig0.restitution = 0.9;
+});
+document.getElementById("bu9").addEventListener('click', function () {//摩擦
+  pig0.friction = 0.1;
+  pig0.frictionAir = 0.001;
+  pig0.restitution = 0;
+});
+function addforce(thebody,m){
+    let n=thebody.angle;
+    Body.applyForce( thebody, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
+}
+
+function logs(e){
+document.getElementById("log").innerHTML+=e;
+}
+
+function doing(){
+//Body.rotate( pig0, Math.PI/2);
+setTimeout('doing()',100)
+}
+var myVar;
+function myFunction(){
+    myVar=setTimeout(function(){myFunction()},1000);
+    setTimeout(function(){clearTimeout(myVar);},3000);
+}
+function myStopFunction(){
+    clearTimeout(myVar);
+}
+
+
+</script>
+
+</body>
+</html>
