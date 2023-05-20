@@ -10,7 +10,7 @@ width:80;height:80;}
 div.bu{
 position:absolute;bottom:10%;
 }
-button.bu{opacity:80%;}
+button.bu{opacity:80%;user-select: none;}
 
 #tool{
 position:fixed;top:10;right:10;color:#fff;font-size:32px;background:black;opacity:80%
@@ -49,22 +49,6 @@ hr {
     color:#f90;/*f00*/
     height:80px;
 }
-/*class dt是网页顶部导航栏，dttb是3条横线*/
-.dttb {
-    left:0;
-    right:0;
-    bottom:0;
-    height:4px;
-    background:#cfa;
-    border-top:4px solid #f90;
-    border-bottom:4px solid #f90;
-}
-/*dbom是写内容的div框的父元素。dbo1是写内容的div。*/
-.dbom {
-    position:absolute;top:100;left:0;right:0;
-    width:100%
-    /*margin:100 0;background:#fff;width:100%;*/
-}
 .dbo1 {
     max-width:925px;width:90%;
     border:1px solid #f90;
@@ -93,26 +77,6 @@ a.tomain {
 a.tomain:hover {
     color:#ff5555;
     /*font-weight:bold;*/
-}
-.tdtx {
-    font-size:60px;
-    /*font-weight:bold;*/
-    font-family:maoti;
-}/* tdtx是“红狼网”样式 */
-div.dldad{
-/* div.download的父元素 */
-    display:flex;
-    flex-flow:row wrap;
-    justify-content:space-around;
-}
-div.download {
-    
-    background:#000000;border:1px solid #ff0000;
-    width:350px;
-    text-align:left;
-    padding:10px;
-    box-sizing:border-box;
-    margin:4px;
 }
 .dona{
     font-weight:bold;
@@ -276,10 +240,10 @@ input:checked + .slider:before {
 <canvas id="canvas" width="1200" height="675" style="width:100%;">你的浏览器不支持canvas</canvas>
 <script src="matter.js"></script>
 <!-- <script src="matter.min.js"></script> -->
-<script src="matter-spring.js"></script>
+<!--script src="matter-spring.js"></script-->
 <script src="tool.js"></script>
 <script>
-if(true){document.getElementById("set").innerHTML='<div style="text-align:center;">设置<div class="hs"><a onclick="tool(\'none\')"><i class="fa fa-times"></i></a></div></div><hr style="height:1px;border:none;border-top:1px solid #ccc;"/><div class="sesw">开关示例<label class="switch"><input id="seta" type="checkbox" onchange="timesp()"><div class="slider round"></div></label><div id="log"></div></div>';alert(90);tool("block")}
+if(true){document.getElementById("set").innerHTML='<div style="text-align:center;">设置<div class="hs"><a onclick="tool(\'none\')"><i class="fa fa-times"></i></a></div></div><hr style="height:1px;border:none;border-top:1px solid #ccc;"/><div class="sesw">开关示例<label class="switch"><input id="seta" type="checkbox" onchange="timesp()"><div class="slider round"></div></label><div id="log"></div></div>';tool("block")}
 function tool(display){
 document.getElementById("set").style.display=display;
 }
@@ -316,7 +280,7 @@ var render = Render.create({
         showAngleIndicator: true,
         showDebug:true,
         showIds: true,
-         wireframes: true//线框模式
+         wireframes: false//线框模式
     }
 });
 
@@ -333,6 +297,10 @@ var thingss = new Array();
 var boxss = new Array();
 var thingssxy = new Array();
 var boxssxy = new Array();
+var thingssxyx = new Array();
+var boxssxyx = new Array();
+var thingssxyy = new Array();
+var boxssxyy = new Array();
 class Things {
   constructor(xy,radius,rd) {
     this.xy = xy;
@@ -341,7 +309,9 @@ class Things {
   }
   addbd(bd,xy) {
     thingss.push(bd);
-    thingssxy.push(xy);
+    thingssxy.push(xy.x+","+xy.y);
+    thingssxyx.push((xy.x+1)+","+xy.y);
+    thingssxyy.push(xy.x+","+(xy.y+1));
   }
 }
 class Box extends Things {
@@ -351,22 +321,41 @@ class Box extends Things {
   create() {
     let bd=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
     boxss.push(bd);
-    boxssxy.push(this.xy);
+    boxssxy.push(this.xy.x+","+this.xy.y);
+    boxssxyx.push((this.xy.x+1)+","+this.xy.y);
+    boxssxyy.push(this.xy.x+","+(this.xy.y+1));
   }
 }
 class Circle extends Things {
   constructor(xy,radius,rd) {
-    super(xy,undefined,rd);
+    super(xy,radius,rd);
   }
   create() {
-    let bd= Bodies.circle(this.x*lattice, this.y*lattice, this.radius, this.render);
+    let bd=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
+    this.addbd(bd,this.xy);
+  }
+}
+class Wheel extends Things {
+  constructor(xy,range,rd) {
+    super(xy,undefined,rd);
+    this.range=range;
+  }
+  create() {
+    let bd=wwheel(this.xy.x*lattice, this.xy.y*lattice, 8.5, 58, 34, this.render.wsjx.render, this.render.wcircle.render);
+    logs(Composite.allBodies(bd)[0].position.y)
+    Composite.rotate(bd, this.range, {x:1,y:5}, true)
     this.addbd(bd,this.xy);
   }
 }
 function thingsadd(things){things.create();}
 try{
-thingsadd(new Box({0,0},renders.febox0));
-thingsadd(new Circle({0,0},renders.egg0));
+thingsadd(new Box({x:1,y:0},renders.febox0));
+//thingsadd(new Box({x:3,y:1},renders.mubox0));
+thingsadd(new Box({x:4,y:2},renders.mubox0));
+for(var i=1;i<20;i++){
+thingsadd(new Wheel({x:1,y:5},4*-i,renders.muwheel0));
+//thingsadd(new Box({x:1+i,y:0},renders.febox0));
+}
 }catch(e){logs(e)}
 var bodyss=thingss.concat(boxss);
 
@@ -377,29 +366,35 @@ var bodyss=thingss.concat(boxss);
 //数组内双向对比，给b赋值重复出现的值。
 //var b=duplicates(a);
 
-try{
+/*try{
 //连接框与其内物
-function compareAr(arr1, arr2) {
+function compareAr(arr1, arr2, rearr1) {
   return arr1.filter((v) => {
     return arr2.indexOf(v) !== -1;
   });
 }
 var b=compareAr(boxssxy, thingssxy);
 for(var i=0;i<b.length;i++){
-    createcst(boxss[boxssxy.indexOf(b[i])],thingssxy[thingss.indexOf(b[i])],0,1,1);
+    let group=Body.nextGroup(true);
+    let b1=boxss[boxssxy.indexOf(b[i])];
+    let b2=thingss[thingssxy.indexOf(b[i])];
+    b1.collisionFilter.group=group;
+    b2.collisionFilter.group=group;
+    bodyss.push(createcst(b1,b2,0,1,1));
 } 
-}catch(e){logs(e)}
-var c0=boxssxy.map(boxssxy => {...boxssxy,x:boxssxy.x+1});
-var c=compareAr(boxssxy,c0);//x轴连接
-var d0=boxssxy.map(boxssxy => {...boxssxy,y:boxssxy.y+1});
-var d=compareAr(boxssxy,d0);//y轴连接
+
+//var c0=boxssxy.map(boxssxy => ({...boxssxy, x: boxssxy.x + 1 }));
+var c=compareAr(boxssxy,boxssxyx);//x轴连接
+//var d0=boxssxy.map(boxssxy => ({...boxssxy,y:boxssxy.y+1}));
+var d=compareAr(boxssxy,boxssxyy);//y轴连接
+
 for(var i=0;i<c.length;i++){
-    connectAB(boxss[boxssxy.indexOf(c[i])],boxss[boxssxy.indexOf(c0[i])],0,1,1);
+    bodyss=bodyss.concat(connectAB(boxss[boxssxy.indexOf(c[i])],boxss[boxssxyx.indexOf(c[i])],{x:-30,y:0},1));
 }
 for(var i=0;i<d.length;i++){
-    connectAB(boxss[boxssxy.indexOf(d[i])],boxss[boxssxy.indexOf(d0[i])],0,1,1);
+    bodyss=bodyss.concat(connectAB(boxss[boxssxy.indexOf(d[i])],boxss[boxssxyy.indexOf(d[i])],{x:0,y:-30},1));
 }
-
+}catch(e){logs(e)}*/
 
 //function duplicates(arr) {
 //    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
@@ -407,6 +402,8 @@ for(var i=0;i<d.length;i++){
 
 
 function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
+    yy=yy-30;
+    
     let Body = Matter.Body,
         Bodies = Matter.Bodies,
         Composite = Matter.Composite,
@@ -424,7 +421,9 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
             render:objectB,
             collisionFilter: {
                 group: group
-            }//,chamfer: {radius: height * 0.5},density: 0.0002
+            },isStatic: true 
+            
+            //,chamfer: {radius: height * 0.5},density: 0.0002
         });
 
     let wheelA = Bodies.circle(xx + wheelXOffset, yy + wheelAOffset, wheelSize, { 
@@ -509,11 +508,11 @@ Composite.add(engine.world, mouseConstraint);
 render.mouse = mouse;
 }catch(e){logs(e)}*/
 
-//var ww=wwheel(000,271,9,58,34,renders.wsjx.render,renders.wcircle.render);
+//var ww=wwheel(0,3*lattice,9,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
 //Composite.rotate( ww, Math.PI/4, {x:50,y:50}, false);
 //Composite.add(engine.world, ww)
 
-var we=wwheel(2*lattice,270,8.5,58,34,renders.wsjx.render,renders.wcircle.render);
+var we=wwheel(2*lattice,3*lattice,8.5,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
 //Composite.rotate( we, Math.PI/2, {x:0,y:0}, false);
 
 
@@ -562,9 +561,9 @@ var stack = Composites.stack(550, 100, 4, 3, 1, 0, function(x, y) {
 */
 
 /*
-var wsjx=Bodies.trapezoid(00,71,9,58,-10,renders.wsjx);//三角形
+var wsjx=Bodies.trapezoid(00,71,9,58,-10,renders.muwheel0.wsjx);//三角形
 //两者的group相等且小于0时不碰撞
-var wcircle = Bodies.circle(200, 330, 34,renders.wcircle);//轮圆
+var wcircle = Bodies.circle(200, 330, 34,renders.muwheel0.wcircle);//轮圆
 var mcst = Constraint.create({
     pointA: { x: 0, y: 30 },
     bodyA: wsjx,
@@ -588,9 +587,9 @@ Composite.add(mwheel,[wsjx,wcircle,mcst])
         element: document.body
     });*/
 
-//var wsjx2=Bodies.trapezoid(300,271,9,58,-10,renders.wsjx);//三角形
+//var wsjx2=Bodies.trapezoid(300,271,9,58,-10,renders.muwheel0.wsjx);//三角形
 //两者的group相等且小于0时不碰撞
-//var wcircle2 = Bodies.circle(300, 330, 34,renders.wcircle);//轮圆
+//var wcircle2 = Bodies.circle(300, 330, 34,renders.muwheel0.wcircle);//轮圆
 /*var mcst2 = Constraint.create({
     pointA: { x: 0, y: 30 },
     bodyA: wsjx2,
@@ -599,7 +598,7 @@ Composite.add(mwheel,[wsjx,wcircle,mcst])
     length: 0,
     type: 'constraint'
 });//轮约束*/
-var mwheel2 = wwheel(3*lattice,270,8.5,58,34,renders.wsjx.render,renders.wcircle.render);
+var mwheel2 = wwheel(3*lattice,3*lattice,8.5,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
 /*Composite.create({
     label: 'Mwheel',
     parent:engine.world
@@ -622,8 +621,9 @@ bcst=bcst.concat(connectAB(mubox0,dpen,{x:-30,y:0},0.4))
 var wsjx2=Composite.allBodies(mwheel2)[0]
 bcst=bcst.concat(connectAB(febox0,wsjx2,{x:0,y:20},0.4))
 //添加所有物品到world里
-Composite.add(engine.world, [mubox0, febox0, ground, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
-Composite.add(engine.world, acst.concat(bcst))
+//Composite.add(engine.world, [mubox0, febox0, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
+Composite.add(engine.world, [ground,mwheel2])
+//Composite.add(engine.world, acst.concat(bcst))
 Composite.add(engine.world, bodyss)
 
 
@@ -684,7 +684,8 @@ document.getElementById("bu1").addEventListener('click', function () {
     //doing()
     //Composite.move(mwheel,wsjx,engine.world)
     //Composite.remove(mwheel,mcst)
-    Matter.Body.setStatic(body, true)
+    //Matter.Body.setStatic(body, true)
+    myVar=nwnw
 });
 document.getElementById("bu2").addEventListener('click', function () {//旋转
     Body.rotate( pig0, Math.PI/50);

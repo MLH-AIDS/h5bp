@@ -1,0 +1,1154 @@
+<html>
+  <head>
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
+    <style>
+.mobiletip{display:none;}
+@media only screen and (max-width: 768px) {
+  /* 针对手机： */
+  .mobiletip{display:inline;}
+}
+.putt{
+display:;
+position:absolute;
+width:100vw;
+height:90px;
+vertical-align:center;
+bottom:0;
+z-index:3;
+}
+#loading{
+position:fixed;
+bottom:30;right:30;
+display:none;
+width:10vw;height:10vw;
+/*width:128;height:128;*/
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/loading.png);
+background-size:64px 64px;
+background-repeat:no-repeat;
+background-position:center;
+}
+
+.menu0{
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/Bad_Piggies_Custom_Splash_2048x1152.png);
+background-size:100% 100%;
+}
+
+#puting{
+display:inline-block;overflow-y:scroll;height:;white-space:nowrap;width:calc(100% - 144px);font-size:0;
+}
+#puting .puter{
+background:#444;
+opacity:70%;
+margin:1.5px;
+width:40px;height:40px;
+display:inline-block;
+border-radius:10%;
+}
+#puting .prop{
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/Ingame_Sheet_04.png);
+--imgw: 1024;
+--imgh: 1024;
+display:inline-block;width:80px;height:80px;
+}
+.skins{
+display:inline-block;width:80px;height:80px;
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/MenuAtlas2.png);
+--imgw: 2048;
+--imgh: 2048;
+--spx: 1538;
+--spy: 948;
+--spw: 127;
+--sph: 124;
+}
+.mover{
+display:inline-block;width:25px;height:50%;
+--imgw: 2048;
+--imgh: 2048;
+--spx: 1981;
+--spy: 1085;
+--spw: 64;
+--sph: 114;
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/MenuAtlas.png);
+margin:15 0;
+}
+.mover:active{transform:scale(0.9,0.9)}
+.mover.rotatey180{transform: rotateY(180deg);}
+.mover.rotatey180:active{transform: rotateY(180deg) scale(0.9,0.9);}
+.skint div div{
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/MenuAtlas2.png);
+width:56.1px;
+height:58.2px;
+display:inline-block;
+filter:brightness(60%);
+margin:1;
+--imgw: 2048;
+--imgh: 2048;
+--spw: 187;
+--sph: 194;
+}
+#skinht{
+background:rgba(0,0,0,0.7);
+z-index:4;
+position:absolute;
+width:100vw;
+height:100vh;
+}
+.skinscroll{
+overflow:scroll;
+white-space:nowrap;
+}
+.skint{
+display:inline-block;
+margin:10 30;
+vertical-align: top;
+}
+.skint div{
+font-size:0px;
+}
+.skint div .chose{
+filter:brightness(100%);
+}
+.skint .star0{
+margin-bottom:10;
+}
+.star0 .skin{
+--spx: 627;
+--spy: 631;
+}
+.star1 .skin{
+--spx: 627;
+--spy: 825;
+}
+.star2 .skin{
+--spx: 1446;
+--spy: 1218;
+}
+.star3 .skin{
+--spx: 1632;
+--spy: 1218;
+}
+.star3 .super{
+--spx: 1256;
+--spy: 1218;
+}
+#skinht .back{
+width:72;
+height:52;
+--imgw: 2048;
+--imgh: 2048;
+--spx: 1095;
+--spy: 651;
+--spw: 120;
+--sph: 87;
+background-image:url(https://s1.imagehub.cc/images/2023/05/03/MenuAtlas.png);
+}
+
+.mover,.skint div div,#skinht .back,.skins,#puting .prop{/*贴图自适应*/
+background-position: calc(100%/(var(--imgw)/var(--spw) - 1)/var(--spw)*var(--spx)) calc(100%/(var(--imgh)/var(--sph) - 1)/var(--sph)*var(--spy));
+background-size:calc(100%/var(--spw)*var(--imgw)) calc(100%/var(--sph)*var(--imgh));
+background-repeat:no-repeat;
+}
+
+.skint div div:active,.activebutton:active{transform:scale(0.9,0.9)}
+    </style>
+  </head>
+  <body>
+    <div id="set">
+    </div>
+    <div id="loading"></div>
+    <div id="loading-a" style="position:fixed;background-color:#fff;opacity:90%;z-index:4;width:100%;padding:10px;display:;">
+        <h1>资源加载</h1>
+        <div class="progress"><div id="jdt-img" class="progress-bar" style="width:0%"></div></div>
+        <div>图片加载进度：<span id="jd-img"></span></div>
+        <div class="progress" style="width:100%"><div id="jdt-audio" class="progress-bar" style="width:0%"></div></div>
+        <div>音频加载进度：<span id="jd-audio"></span></div>
+        <button id="start-a" class="btn btn-secondary" onclick="">开始游戏</button>
+        <p><br/></p>
+        <h1>设置</h1>
+        <span class="mobiletip">手机用户请全屏并横屏游戏！</span>
+        <button id="fullScreen" class="btn btn-primary">全屏</button>
+        <button id="noFullScreen" style="display:none;" class="btn btn-primary">退出全屏</button>
+        <p>静音 <label class="switch"><input id="set_a" type="checkbox" onchange="muteaudio()"><div class="slider round"></div></label></p>
+    </div>
+    
+    <div class="menu0" style="display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="width:100%;">
+      </div>
+      <div style="width:100%;">
+        <div style="margin:0 auto;">
+        </div>
+      </div>
+      <div style="width:100%;">
+      </div>
+    </div>
+    
+    
+    <div class="putt" style="">
+        <div class="mover rotatey180" style="" onclick="document.getElementById('puting').scrollLeft-=300;"></div>
+        <div id="puting" style="">
+            <div class="prop" style="--spx: 514;--spy: 0;--spw: 125;--sph: 125;"></div>
+            <div class="prop" style="--spx: 130;--spy: 1;--spw: 125;--sph: 126;"></div>
+            <div class="prop" style="--spx: 0;--spy: 9;--spw: 125;--sph: 125;"></div>
+            <div class="prop" style="--spx: 382;--spy: 128;--spw: 133;--sph: 133;"></div>
+            <div class="prop" style="--spx: 257;--spy: 3;--spw: 123;--sph: 124;"></div>
+            <div style="display:inline-block;">
+            <div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            </div>
+            <div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            <div class="puter"></div>
+            </div>
+            </div>
+        </div>
+        <div class="mover" style="" onclick="document.getElementById('puting').scrollLeft+=300;"></div>
+        <div class="skins activebutton" style="" onclick="dgbyid('skinht').style.display='block';"></div>
+    </div>
+    <div style="display:none;max-width:1024px;height:576px;min-height:100vh;background:#000;">
+        <div style="background:#666;">
+        </div>
+    </div>
+    
+  <div id="skinht" style="">
+    <div class="skinscroll" id="skinscroll">
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+        </div>
+        <div class="star3">
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+          <div class="super" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+      <div class="skint">
+        <div class="star0">
+          <div class="skin chose" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star1">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star2">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+        <div class="star3">
+          <div class="skin" onclick="chooseskin(this)"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="back activebutton" onclick="dgbyid('skinht').style.display='none';"></div>
+      <input type="range" style="width:70%;/*margin:0 15%;*/background:green;" oninput="dgbyid('skinscroll').scrollLeft=(dgbyid('skinscroll').scrollWidth-dgbyid('skinscroll').offsetWidth)*this.value/100;"，min="0" max="100" value="0">
+      <div class="" style="background:green;width:70;height:40;">
+  </div>
+
+<script src="filebag.js"></script><!--   -->
+<script>
+var GETs = (function(){
+    var url = window.document.location.href.toString();
+    var u = url.split("?");
+    if(typeof(u[1]) == "string"){
+        u = u[1].split("&");
+        var get = {};
+        for(var i in u){
+            var j = u[i].split("=");
+            get[j[0]] = j[1];
+        }
+        return get;
+    } else {
+        return {};
+    }
+})();//get对象
+if(GETs.test=1){
+dgbyid("loading-a").style.display="none";
+dgbyid("putt").style.display="none";
+}
+   document.getElementById("fullScreen").onclick=function(){
+      if(document.documentElement.RequestFullScreen){
+        document.documentElement.RequestFullScreen();
+      }
+      //兼容火狐
+      //console.log(document.documentElement.mozRequestFullScreen)
+      if(document.documentElement.mozRequestFullScreen){
+        document.documentElement.mozRequestFullScreen();
+      }
+      //兼容谷歌等可以webkitRequestFullScreen也可以webkitRequestFullscreen
+      if(document.documentElement.webkitRequestFullScreen){
+        document.documentElement.webkitRequestFullScreen();
+      }
+      //兼容IE,只能写msRequestFullscreen
+      if(document.documentElement.msRequestFullscreen){
+        document.documentElement.msRequestFullscreen();
+      }
+   document.getElementById("fullScreen").style.display="none";
+   document.getElementById("noFullScreen").style.display="block"
+   }
+   document.getElementById("noFullScreen").onclick=function(){
+      if(document.exitFullScreen){
+        document.exitFullscreen()
+      }
+      //兼容火狐
+      //alert(document.mozExitFullScreen)
+      if(document.mozCancelFullScreen){
+        document.mozCancelFullScreen()
+      }
+      //兼容谷歌等
+      if(document.webkitExitFullscreen){
+        document.webkitExitFullscreen()
+      }
+      //兼容IE
+      if(document.msExitFullscreen){
+        document.msExitFullscreen()
+      }
+      document.getElementById("fullScreen").style.display="block";
+      document.getElementById("noFullScreen").style.display="none"
+   }
+var timeouts;
+var fileload={imgload:0,
+imgs:[],
+audios:[]};
+function checkrs(){
+    let rs=auReady();
+    if(dgbyid("jd-audio").innerHTML!==rs+"/"+(filebag.audiolink.length*4)){
+        dgbyid("jdt-audio").style.width=Math.round(rs/(filebag.audiolink.length*4)*10000)/100+"%";
+        dgbyid("jd-audio").innerHTML=rs+"/"+(filebag.audiolink.length*4);
+    }
+    if(rs!=filebag.audiolink.length*4){
+        setTimeout("checkrs()",2000)
+    }else{
+        
+    }
+    
+}
+function checkimg(){
+    let rs=imgReady();
+    if(dgbyid("jd-img").innerHTML!==rs+"/"+fileload.imgs.length){
+        dgbyid("jdt-img").style.width=Math.round(rs/(fileload.imgs.length)*10000)/100+"%";
+        dgbyid("jd-img").innerHTML=rs+"/"+fileload.imgs.length;
+    }
+    if(rs!=fileload.imgs.length){
+        setTimeout(function(){checkimg();},2000)
+    }else{
+        dgbyid("start-a").setAttribute("class","btn btn-primary")
+        dgbyid("start-a").setAttribute("onclick","starta()")
+    }
+}
+window.load=setTimeout(function(){
+    for(var i=0;i<filebag.ihpnglink.length;i++){
+        fileload.imgs[i]=new Image();
+        fileload.imgs[i].src="https://www.imagehub.cc/"+filebag.ihpnglink[i];
+    }
+    for(var i=0;i<filebag.audiolink.length;i++){
+        fileload.audios[i]=new Audio();
+        fileload.audios[i].src="https://mlh-aids.github.io/matterbp/"+filebag.audiolink[i];
+    }
+    checkrs();
+    checkimg();
+},2000*(GETs.num||1));
+
+function auReady(){
+   let rs=0;
+   for(var i=0;i<fileload.audios.length;i++){
+     rs+=fileload.audios[i].readyState;
+   }
+   return rs;
+}
+function imgReady(){
+   let rs=0;
+   for(var i=0;i<fileload.imgs.length;i++){
+     if(fileload.imgs[i].complete){
+        rs++;
+     }
+   }
+   return rs;
+}
+function dgbyid(idid){return document.getElementById(idid);}
+
+function starta(){
+fileload.audios[232].loop=true;
+playaudio(232);
+dgbyid("loading-a").style.display="none";
+}
+function loadsign(){
+dgbyid("loading").style.display="block";
+setTimeout(function(){dgbyid("loading").style.display="none";},1000);
+}
+function playaudio(num,replay){
+    fileload.audios[num].play();
+    if(replay){fileload.audios[num].currentTime = 0;}
+}
+function stopaudio(num){
+    fileload.audios[num].pause();
+}
+function muteaudio(){
+  if(dgbyid("set_a").checked){
+    for(var i=0;i<filebag.audiolink.length;i++){
+      fileload.audios[i].muted=true;
+    }
+  }else{
+    for(var i=0;i<filebag.audiolink.length;i++){
+      fileload.audios[i].muted=false;
+    }
+  }
+}
+function chooseskin(node){
+node.parentNode.parentNode.querySelectorAll(".chose")[0].classList.remove("chose");
+node.classList.add("chose");
+playaudio(323,true);
+}
+</script>
+    </body>
+</html>
