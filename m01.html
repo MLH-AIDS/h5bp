@@ -1,16 +1,19 @@
 <!DOCTAPE html>
 <html>
 <head>
-<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <style>
 body{margin:0;padding:0;background:green}
 button{
 background:#96b52d;
-width:80;height:80;}
+font-size:24px
+width:70;height:70;
+}
 div.bu{
 position:absolute;bottom:10%;
 }
 button.bu{opacity:80%;user-select: none;}
+
 
 #tool{
 position:fixed;top:10;right:10;color:#fff;font-size:32px;background:black;opacity:80%
@@ -27,9 +30,7 @@ position:fixed;top:10;right:10;color:#fff;font-size:32px;background:black;opacit
     overflow: scroll;
     opacity:50%
 }
-button{
-font-size:24px
-}
+
 
 
 
@@ -60,44 +61,6 @@ hr {
     /*flex-wrap:wrap;
     display:flex;*/
 }
-/*tomain是回到主页按钮*/
-div.tomain {
-    float:left;
-    height:65px;
-    width:65px;
-    text-align:center;
-    border:3px double #e53333;
-}
-a.tomain {
-    color:#ff0000;
-    font-size:55px;
-    margin:0 auto;
-    transition:color 0.5s,font-weight 0.5s;
-}
-a.tomain:hover {
-    color:#ff5555;
-    /*font-weight:bold;*/
-}
-.dona{
-    font-weight:bold;
-    font-size:18px;
-    line-height:7px;
-}/*下载的项目名字*/
-.domi{
-    line-height:7px;
-    color:;
-}/*下载的项目描述等*/
-img.download{
-    width:98%;
-    height:270px;
-    margin:0 auto;
-}
-button.download {
-    background:#e53333;
-    float:right;
-}
-.star{transition:font-size 1s;}
-.star:hover{font-size:32px;}
 /*tool为悬浮的工具栏*/
 .tool{
     /*display:none;*/
@@ -212,7 +175,7 @@ input:checked + .slider:before {
 }
 /*字体*/
 /*@font-face {
-    font-family: maoti;
+    font-family: pigfont;
     src: url()
 }*/
 </style>
@@ -234,18 +197,26 @@ input:checked + .slider:before {
 <button class="bu" id="bu7">bu7</button>
 <button class="bu" id="bu8">bu8</button>
 <button class="bu" id="bu9">bu9</button>
-</div>
-<br>
+<button onclick="document.documentElement.webkitRequestFullScreen();">全屏</button>
+<input type="range" min="0" max="10" step="1" oninput="lookat(0,0,(this.value-5)*0.1);this.value=5;">
+<input type="range" min="0" max="10" step="1" oninput="lookat((this.value-5)*10,0,0);this.value=5;">
+<input type="range" min="0" max="10" step="1" oninput="lookat(0,(this.value-5)*10,0);this.value=5;">
 <input type="text" onchange="eval(this.value)">
-<canvas id="canvas" width="1200" height="675" style="width:100%;">你的浏览器不支持canvas</canvas>
+<input type="checkbox" id="check">
+</div>
+
+<canvas id="canvas" width="1200" height="675" style="width:100vw;">你的浏览器不支持canvas</canvas>
 <script src="matter.js"></script>
 <!-- <script src="matter.min.js"></script> -->
 <!--script src="matter-spring.js"></script-->
 <script src="tool.js"></script>
 <script>
-if(true){document.getElementById("set").innerHTML='<div style="text-align:center;">设置<div class="hs"><a onclick="tool(\'none\')"><i class="fa fa-times"></i></a></div></div><hr style="height:1px;border:none;border-top:1px solid #ccc;"/><div class="sesw">开关示例<label class="switch"><input id="seta" type="checkbox" onchange="timesp()"><div class="slider round"></div></label><div id="log"></div></div>';tool("block")}
+function dgbyid(idid){
+return document.getElementById(idid)
+}
+if(true){dgbyid("set").innerHTML='<div style="text-align:center;">设置<div class="hs"><a onclick="tool(\'none\')"><i class="fa fa-times"></i></a></div></div><hr style="height:1px;border:none;border-top:1px solid #ccc;"/><div class="sesw">开关示例<label class="switch"><input id="seta" type="checkbox" onchange="timesp()"><div class="slider round"></div></label><div id="log"></div></div>';tool("block")}
 function tool(display){
-document.getElementById("set").style.display=display;
+dgbyid("set").style.display=display;
 }
 
 //matter0.19
@@ -270,13 +241,14 @@ var engine = Engine.create();
 
 // create a renderer
 var render = Render.create({
-    canvas: document.getElementById("canvas"),
+    canvas: dgbyid("canvas"),
     //element: document.body,
     engine: engine,
     options: {
         width: 1200,
         height: 675,
-        background:"#ccc",
+        background:"url(https://s1.imagehub.cc/images/2023/05/14/Night_Sky_Texture.png)",
+        hasBounds:true,
         showAngleIndicator: true,
         showDebug:true,
         showIds: true,
@@ -288,19 +260,23 @@ var render = Render.create({
 
 </script>
 
-<script src="objects.js"></script>
+<script src="options.js"></script>
 <!--/*  贴图等  */-->
 
 <script>
 var lattice;lattice=100;
-var thingss = new Array();
-var boxss = new Array();
-var thingssxy = new Array();
-var boxssxy = new Array();
-var thingssxyx = new Array();
-var boxssxyx = new Array();
-var thingssxyy = new Array();
-var boxssxyy = new Array();
+var thingsp={
+  thingss:[],
+  thingssxy:[],
+  thingssxyx:[],
+  thingssxyy:[]
+}
+var boxsp={
+  boxss:[],
+  boxssxy:[],
+  boxssxyx:[],
+  boxssxyy:[]
+}
 class Things {
   constructor(xy,radius,rd) {
     this.xy = xy;
@@ -308,10 +284,15 @@ class Things {
     this.render = rd;
   }
   addbd(bd,xy) {
-    thingss.push(bd);
-    thingssxy.push(xy.x+","+xy.y);
-    thingssxyx.push((xy.x+1)+","+xy.y);
-    thingssxyy.push(xy.x+","+(xy.y+1));
+    thingsp.thingss.push(bd);
+    thingsp.thingssxy.push(xy.x+","+xy.y);
+    thingsp.thingssxyx.push((xy.x+1)+","+xy.y);
+    thingsp.thingssxyy.push(xy.x+","+(xy.y+1));
+    return bd;
+  }
+  follow(bd){
+    slookat.x=bd.position.x;
+    slookat.y=bd.position.y;
   }
 }
 class Box extends Things {
@@ -320,10 +301,11 @@ class Box extends Things {
   }
   create() {
     let bd=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
-    boxss.push(bd);
-    boxssxy.push(this.xy.x+","+this.xy.y);
-    boxssxyx.push((this.xy.x+1)+","+this.xy.y);
-    boxssxyy.push(this.xy.x+","+(this.xy.y+1));
+    boxsp.boxss.push(bd);
+    boxsp.boxssxy.push(this.xy.x+","+this.xy.y);
+    boxsp.boxssxyx.push((this.xy.x+1)+","+this.xy.y);
+    boxsp.boxssxyy.push(this.xy.x+","+(this.xy.y+1));
+    return bd;
   }
 }
 class Circle extends Things {
@@ -332,7 +314,7 @@ class Circle extends Things {
   }
   create() {
     let bd=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
-    this.addbd(bd,this.xy);
+    return this.addbd(bd,this.xy);
   }
 }
 class Wheel extends Things {
@@ -344,58 +326,66 @@ class Wheel extends Things {
     let bd=wwheel(this.xy.x*lattice, this.xy.y*lattice, 8.5, 58, 34, this.render.wsjx.render, this.render.wcircle.render);
     logs(Composite.allBodies(bd)[0].position.y)
     Composite.rotate(bd, this.range, {x:1,y:5}, true)
-    this.addbd(bd,this.xy);
+    return this.addbd(bd,this.xy);
+  }
+}
+class Rocket extends Things {
+  constructor(xy,range,rd) {
+    super(xy,undefined,rd);
+    this.range=range;
+  }create() {
+    
   }
 }
 function thingsadd(things){things.create();}
-try{
-thingsadd(new Box({x:1,y:0},renders.febox0));
-//thingsadd(new Box({x:3,y:1},renders.mubox0));
-thingsadd(new Box({x:4,y:2},renders.mubox0));
-for(var i=1;i<20;i++){
-thingsadd(new Wheel({x:1,y:5},4*-i,renders.muwheel0));
-//thingsadd(new Box({x:1+i,y:0},renders.febox0));
-}
-}catch(e){logs(e)}
-var bodyss=thingss.concat(boxss);
+  try{
+
+  new Box({x:1,y:0},toptions.febox0).create()
+  new Box({x:2,y:0},toptions.febox0).create()
+  var b2=new Box({x:3,y:0},toptions.febox0).create()
+
+new Wheel({x:1,y:1},0,toptions.muwheel0).create();
+var wheel=new Wheel({x:3,y:1},0,toptions.muwheel0).create();
+var pig0=new Circle({x:2,y:0},45,toptions.pig0).create()
+  }catch(e){logs(e)}
+
+var bodyss=thingsp.thingss.concat(boxsp.boxss);
 
 
-//bodyss是数组，内含多个对象。数组可能上百，甚至可能上千，取决于用户，没有上限。尽量提升性能。
-//对象中含有box与things两种，这里已经合并，但也许有更好的写法？一个box和另一个box坐标不会重合，things同理，但一个box和一个things的坐标可以重叠
 //var a=new Array();
 //数组内双向对比，给b赋值重复出现的值。
 //var b=duplicates(a);
 
-/*try{
+
 //连接框与其内物
 function compareAr(arr1, arr2, rearr1) {
   return arr1.filter((v) => {
     return arr2.indexOf(v) !== -1;
   });
 }
-var b=compareAr(boxssxy, thingssxy);
-for(var i=0;i<b.length;i++){
+for(var i=0,b=compareAr(boxsp.boxssxy, thingsp.thingssxy);i<b.length;i++){
     let group=Body.nextGroup(true);
-    let b1=boxss[boxssxy.indexOf(b[i])];
-    let b2=thingss[thingssxy.indexOf(b[i])];
+    let b1=boxsp.boxss[boxsp.boxssxy.indexOf(b[i])];
+    let b2=thingsp.thingss[thingsp.thingssxy.indexOf(b[i])];
     b1.collisionFilter.group=group;
     b2.collisionFilter.group=group;
     bodyss.push(createcst(b1,b2,0,1,1));
 } 
 
-//var c0=boxssxy.map(boxssxy => ({...boxssxy, x: boxssxy.x + 1 }));
-var c=compareAr(boxssxy,boxssxyx);//x轴连接
-//var d0=boxssxy.map(boxssxy => ({...boxssxy,y:boxssxy.y+1}));
-var d=compareAr(boxssxy,boxssxyy);//y轴连接
+//var c0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy, x: boxsp.boxssxy.x + 1 }));
+var c=compareAr(boxsp.boxssxy,boxsp.boxssxyx);//x轴连接
+//var d0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy,y:boxsp.boxssxy.y+1}));
+var d=compareAr(boxsp.boxssxy,boxsp.boxssxyy);//y轴连接
 
 for(var i=0;i<c.length;i++){
-    bodyss=bodyss.concat(connectAB(boxss[boxssxy.indexOf(c[i])],boxss[boxssxyx.indexOf(c[i])],{x:-30,y:0},1));
-}
+    bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(c[i])],boxsp.boxss[boxsp.boxssxyx.indexOf(c[i])],{x:-30,y:0},1));
+}//x轴连接框框
 for(var i=0;i<d.length;i++){
-    bodyss=bodyss.concat(connectAB(boxss[boxssxy.indexOf(d[i])],boxss[boxssxyy.indexOf(d[i])],{x:0,y:-30},1));
-}
-}catch(e){logs(e)}*/
+    bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(d[i])],boxsp.boxss[boxsp.boxssxyy.indexOf(d[i])],{x:0,y:-30},1));
+}//y轴连接框框
+try{bodyss=bodyss.concat(connectAB(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));}catch(e){logs(e)}
 
+//bodyss=bodyss.concat(connectAB());
 //function duplicates(arr) {
 //    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
 //}
@@ -421,7 +411,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
             render:objectB,
             collisionFilter: {
                 group: group
-            },isStatic: true 
+            }
             
             //,chamfer: {radius: height * 0.5},density: 0.0002
         });
@@ -508,22 +498,18 @@ Composite.add(engine.world, mouseConstraint);
 render.mouse = mouse;
 }catch(e){logs(e)}*/
 
-//var ww=wwheel(0,3*lattice,9,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
+//var ww=wwheel(0,3*lattice,9,58,34,toptions.muwheel0.wsjx.render,toptions.muwheel0.wcircle.render);
 //Composite.rotate( ww, Math.PI/4, {x:50,y:50}, false);
 //Composite.add(engine.world, ww)
 
-var we=wwheel(2*lattice,3*lattice,8.5,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
+var we=wwheel(2*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptions.muwheel0.wcircle.render);
 //Composite.rotate( we, Math.PI/2, {x:0,y:0}, false);
 
 
 // createing 创建物品
-var mubox0 = Bodies.rectangle(2*lattice, 2*lattice, 1*lattice, 1*lattice,renders.mubox0);//0木框
-var febox0 = Bodies.rectangle(3*lattice, 2*lattice, 1*lattice, 1*lattice,renders.febox0);//0铁框
-var spring = Bodies.rectangle(200, 100, 70, 100, renders.spring);//0弹簧
+//var spring = Bodies.rectangle(200, 100, 70, 100, toptions.spring);//0弹簧
 var ground = Bodies.rectangle(400, 610, 9910, 60, { isStatic: true });//地面
-var pig0 = Bodies.circle(2*lattice, 2*lattice, 45, renders.pig0);//0猪
-var egg0 = Bodies.circle(3*lattice, 2*lattice, 45, renders.egg0);//0鸟蛋
-var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, renders.dp0)
+var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, toptions.dp0)
 
 var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
 //Composite.add(engine.world, [circleth]);
@@ -549,56 +535,29 @@ var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
 
 
 //堆彻
-/*
-var stack = Composites.stack(550, 100, 4, 3, 1, 0, function(x, y) {
-  return Bodies.rectangle(x, y, 40, 20, {
-    render: {
-      fillStyle: 'orange',
-      strokeStyle: 'black'
-    }
-  });
-});//堆彻
-*/
+// var stack = Composites.stack(550, 100, 4, 3, 1, 0, function(x, y) {
+  // return Bodies.rectangle(x, y, 40, 20, {
+    // render: {
+      // fillStyle: 'orange',
+      // strokeStyle: 'black'
+    // }
+  // });
+//});//堆彻
 
-/*
-var wsjx=Bodies.trapezoid(00,71,9,58,-10,renders.muwheel0.wsjx);//三角形
-//两者的group相等且小于0时不碰撞
-var wcircle = Bodies.circle(200, 330, 34,renders.muwheel0.wcircle);//轮圆
-var mcst = Constraint.create({
-    pointA: { x: 0, y: 30 },
-    bodyA: wsjx,
-    bodyB: wcircle,
-    stiffness: 0.5,
-    length: 0,
-    type: 'constraint'
-});//轮约束
-var mwheel = Composite.create({
-    label: 'Mwheel',
-    parent:engine.world
-});//轮复合体
+
+
 //mwheel[1]=Composite.create({
 //    label: 'Mwheel',
 //    parent:engine.world
 //});
-Composite.add(mwheel,[wsjx,wcircle,mcst])
-*/
+
     /**添加鼠标控制*/
     /*var mouseConstraint = Matter.MouseConstraint.create(engine, {
         element: document.body
     });*/
 
-//var wsjx2=Bodies.trapezoid(300,271,9,58,-10,renders.muwheel0.wsjx);//三角形
-//两者的group相等且小于0时不碰撞
-//var wcircle2 = Bodies.circle(300, 330, 34,renders.muwheel0.wcircle);//轮圆
-/*var mcst2 = Constraint.create({
-    pointA: { x: 0, y: 30 },
-    bodyA: wsjx2,
-    bodyB: wcircle2,
-    stiffness: 0.5,
-    length: 0,
-    type: 'constraint'
-});//轮约束*/
-var mwheel2 = wwheel(3*lattice,3*lattice,8.5,58,34,renders.muwheel0.wsjx.render,renders.muwheel0.wcircle.render);
+
+var mwheel2 = wwheel(3*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptions.muwheel0.wcircle.render);
 /*Composite.create({
     label: 'Mwheel',
     parent:engine.world
@@ -609,20 +568,15 @@ var mwheel2 = wwheel(3*lattice,3*lattice,8.5,58,34,renders.muwheel0.wsjx.render,
 });*/
 //Composite.add(mwheel2,[wsjx2,wcircle2,mcst2])
 
-var acst = new Array();
-acst[0]=createcst(pig0,mubox0,0,1,1);
-acst[1]=createcst(egg0,febox0,0,1,1);
-//acst[2]=createcst(pig0,mubox0,1,1,1);
-//acst[3]=createcst(egg0,febox0,1,1,1);
-var bcst = new Array();
-bcst=bcst.concat(connectAB(febox0,mubox0,{x:-30,y:0},1))
-bcst=bcst.concat(connectAB(mubox0,Composite.allBodies(we)[0],{x:0,y:20},0.3))
-bcst=bcst.concat(connectAB(mubox0,dpen,{x:-30,y:0},0.4))
-var wsjx2=Composite.allBodies(mwheel2)[0]
-bcst=bcst.concat(connectAB(febox0,wsjx2,{x:0,y:20},0.4))
+var acst = [];
+var bcst = [];
+//bcst=bcst.concat(connectAB(mubox0,dpen,{x:-30,y:0},0.4))
+//var wsjx2=Composite.allBodies(mwheel2)[0]
+//bcst=bcst.concat(connectAB(febox0,wsjx2,{x:0,y:20},0.4))
+
 //添加所有物品到world里
 //Composite.add(engine.world, [mubox0, febox0, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
-Composite.add(engine.world, [ground,mwheel2])
+Composite.add(engine.world, [ground])
 //Composite.add(engine.world, acst.concat(bcst))
 Composite.add(engine.world, bodyss)
 
@@ -630,18 +584,174 @@ Composite.add(engine.world, bodyss)
 //Composite.add(engine.world,[softBody,spring])
 
 //运行(渲染)renderer
-//Render.run(render);
-//创建runner
-//var runner = Runner.create();
-//运行engine
-//Runner.run(runner, engine);
-
-Engine.run(engine);
 Render.run(render);
+//创建runner
+var runner = Runner.create();
+//运行engine
+Runner.run(runner, engine);
 
-//Render.lookAt(render,{min:100,max:500})
+//Engine.run(engine);
+//Render.run(render);
 
 
+class Scene {
+  offset = { x: 0, y: 0 }; // 拖动偏移
+  curOffset = { x: 0, y: 0 }; // 记录上一次的偏移量
+  x = 0; // 记录鼠标点击Canvas时的横坐标
+  y = 0; // 记录鼠标点击Canvas时的纵坐标
+  touchOffset2 = { x: 0, y: 0 };// 记录第二指触摸点击Canvas时的坐标
+
+  constructor(id, options = {
+    width: render.options.width,
+    height: render.options.height
+  }) {
+    this.canvas = document.querySelector('#canvas');
+    this.width = options.width;
+    this.height = options.height;
+    this.canvas.width = options.width;
+    this.canvas.height = options.height;
+    this.ctx = this.canvas.getContext('2d');
+    this.onMousedown = this.onMousedown.bind(this);
+    this.onMousemove = this.onMousemove.bind(this);
+    this.onMouseup = this.onMouseup.bind(this);
+    this.canvas.addEventListener('mousedown', this.onMousedown);
+    this.onTouchstart=this.onTouchstart.bind(this);
+    this.onTouchmove=this.onTouchmove.bind(this);
+    this.onTouchend=this.onTouchend.bind(this);
+    this.canvas.addEventListener('touchstart', this.onTouchstart);
+  }
+
+  //鼠标
+  onMousedown(e) {
+    if (e.button === 0) {
+      // 鼠标左键
+      this.x = e.x;
+      this.y = e.y
+      window.addEventListener('mousemove', this.onMousemove);
+      window.addEventListener('mouseup', this.onMouseup);
+      //logs(this.x)
+    }
+  }
+
+  onMousemove(e) {
+   this.offset.x = this.curOffset.x + (e.x - this.x);
+   this.offset.y = this.curOffset.y + (e.y - this.y);
+   logs(e.x)
+
+   this.paint();
+  }
+
+  onMouseup() {
+    this.curOffset.x = this.offset.x;
+    this.curOffset.y = this.offset.y;
+    //logs(this.curOffset.x)
+    window.removeEventListener('mousemove', this.onMousemove);
+    window.removeEventListener('mouseup', this.onMouseup);
+  }
+
+  //触摸屏
+  onTouchstart(e) {
+    this.x = e.targetTouches[0].pageX;
+    this.y = e.targetTouches[0].pageY;
+    if(e.targetTouches[1]){
+      this.touchOffset2.x=e.targetTouches[1].pageX;
+      this.touchOffset2.y=e.targetTouches[1].pageY;
+    }
+    this.canvas.addEventListener('touchmove', this.onTouchmove);
+    this.canvas.addEventListener('touchend', this.onTouchend);
+  }
+  
+  onTouchmove(e){
+    lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0)
+    if(e.targetTouches[1]){
+      try{lookat(0,0,(Math.sqrt(Math.pow(this.x-this.touchOffset2.x,2) + Math.pow(this.y-this.touchOffset2.y,2)) / Math.sqrt(Math.pow(e.targetTouches[0].pageX-e.targetTouches[1].pageX,2) + Math.pow(e.targetTouches[0].pageY-e.targetTouches[1].pageY,2))),true);}catch(e){logs(e)}
+      this.x = e.targetTouches[0].pageX;
+      this.y = e.targetTouches[0].pageY;
+      this.touchOffset2.x=e.targetTouches[1].pageX;
+      this.touchOffset2.y=e.targetTouches[1].pageY;
+    }else{
+      lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0);
+      this.x = e.targetTouches[0].pageX;
+      this.y = e.targetTouches[0].pageY;
+    }
+    //this.offset.x = this.curOffset.x + (e.targetTouches[0].pageX - this.x);
+    //this.offset.y = this.curOffset.y + (e.targetTouches[0].pageY - this.y);
+    //this.paint();
+  }
+  
+  onTouchend(){
+    this.curOffset.x = this.offset.x;
+    this.curOffset.y = this.offset.y;
+    window.removeEventListener('touchmove', this.onTouchmove);
+    window.removeEventListener('touchend', this.onTouchend);
+  }
+  
+  draw() {/*
+    this.ctx.fillStyle = 'red';
+    this.ctx.fillRect(50, 50, 50, 50);
+
+    this.ctx.fillStyle = 'green';
+    this.ctx.fillRect(150, 150, 50, 50);*/
+  }
+
+  clear() {
+    this.canvas.width = this.width;
+  }
+
+  paint() {
+    //this.clear();
+    //this.ctx.translate(this.offset.x, this.offset.y);
+    //this.draw();
+    lookat(this.offset.x, this.offset.y,0)
+  }
+}new Scene();
+
+
+var slookat={
+x:render.options.width/2,
+y:render.options.height/2,
+size:1,
+body:undefined
+}
+slookat.body=pig0;
+function lookat(x,y,csize,csizex){
+  if(csizex){
+    if(slookat.size*csize>0.5&&slookat.size*csize<50){
+      slookat.size*=csize;
+    }else if(slookat.size*csize<0.5){slookat.size=0.5}
+    else if(slookat.size*csize>50){slookat.size=50}
+  }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
+    slookat.size+=csize;
+  }
+  let size=slookat.size;
+  slookat.x+=x*size;
+  slookat.y+=y*size;
+  Render.lookAt(render, {
+    min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
+    max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
+  });
+}
+function followthings(){
+slookat.x=slookat.body.position.x;
+slookat.y=slookat.body.position.y;
+lookat(0,0,0)
+}
+Events.on(runner, "beforeUpdate", function(){
+  if(dgbyid("check").checked){followthings()}
+  let ctx=render.canvas.getContext("2d");
+  ctx.font="25px Arial";
+  ctx.textAlign="start";
+  ctx.fillText("雀斑猪速度: "+Math.round(pig0.speed*10)/10,50,125);
+  ctx.fillText("雀斑猪位置: ("+Math.round(pig0.position.x/100)+","+Math.round(pig0.position.y/100)+")",50,150);
+  ctx.fillText("雀斑猪角度: "+Math.round(pig0.angle*10)/10,50,175);
+  ctx.fillText("雀斑猪角速度: "+Math.round(pig0.angularSpeed*10)/10,50,200);
+  ctx.fillText("视野大小: "+Math.round(slookat.size*5*100)/100,50,225);
+  ctx.fillText("视野位置: ("+Math.round(slookat.x/100)+","+Math.round(slookat.y/100)+")",50,250);
+  
+});
+render.canvas.ondblclick=function(){
+  dgbyid("check").checked=(!dgbyid("check").checked);
+}
 /*Events.on(render, 'beforeRender', function() {
         var world = engine.world,
             mouse = mouseConstraint.mouse,
@@ -679,42 +789,43 @@ Render.run(render);
             Mouse.setOffset(mouse, render.bounds.min);
         }*/
 
-document.getElementById("bu1").addEventListener('click', function () {
+dgbyid("bu1").addEventListener('click', function () {
     //Body.scale( mubox0, 1.5, 1.2);//放大
     //doing()
     //Composite.move(mwheel,wsjx,engine.world)
     //Composite.remove(mwheel,mcst)
     //Matter.Body.setStatic(body, true)
-    myVar=nwnw
+    //myVar=nwnw
+    lookat(0,0,0.1)
 });
-document.getElementById("bu2").addEventListener('click', function () {//旋转
+dgbyid("bu2").addEventListener('click', function () {//旋转
     Body.rotate( pig0, Math.PI/50);
 });
-document.getElementById("bu3").addEventListener('click', function () {//移动
+dgbyid("bu3").addEventListener('click', function () {//移动
     Body.translate( mubox0, {x: 40, y: -20});
 });
-document.getElementById("bu4").addEventListener('click', function () {//移动速度
+dgbyid("bu4").addEventListener('click', function () {//移动速度
     Body.setVelocity( mubox0, {x: 00, y: -20});
     Body.setVelocity( febox0, {x: 00, y: 20});
     Body.setVelocity( pig0, {x: 10, y: -10});
 });
-document.getElementById("bu5").addEventListener('click', function () {//旋转速度
-    Body.setAngularVelocity( Composite.allBodies(mwheel2)[1], Math.PI/10);
+dgbyid("bu5").addEventListener('click', function () {//旋转速度
+    Body.setAngularVelocity( Composite.allBodies(wheel)[1], Math.PI/10);
     //Body.setAngularVelocity( mubox0, Math.PI/6);
 });
-document.getElementById("bu6").addEventListener('click', function () {//施加力向右
+dgbyid("bu6").addEventListener('click', function () {//施加力向右
     addforce(dpen,0.44);
     //Body.applyForce( obja, {x: obja.position.x, y: obja.position.y}, {x: 0.44, y: 0});
 });
-document.getElementById("bu7").addEventListener('click', function () {//向上力
+dgbyid("bu7").addEventListener('click', function () {//向上力
     addforce(pig0,-0.44);
 });
-document.getElementById("bu8").addEventListener('click', function () {//摩擦
+dgbyid("bu8").addEventListener('click', function () {//摩擦
   pig0.friction = 0.05;
   pig0.frictionAir = 0.0005;
   pig0.restitution = 0.9;
 });
-document.getElementById("bu9").addEventListener('click', function () {//摩擦
+dgbyid("bu9").addEventListener('click', function () {//摩擦
   pig0.friction = 0.1;
   pig0.frictionAir = 0.001;
   pig0.restitution = 0;
@@ -725,23 +836,26 @@ function addforce(thebody,m){
 }
 
 function logs(e){
-document.getElementById("log").innerHTML+=e;
+dgbyid("log").innerHTML+=e+", ";
 }
 
 function doing(){
 //Body.rotate( pig0, Math.PI/2);
 setTimeout('doing()',100)
 }
-var myVar;
-function myFunction(){
-    myVar=setTimeout(function(){myFunction()},1000);
-    setTimeout(function(){clearTimeout(myVar);},3000);
-}
-function myStopFunction(){
+
+class Loop {
+  constructor(does,time){
+  this.does=does;
+  this.time=time;
+  }
+  start(){
+    setTimeout(function(){start(),eval(this.does)},this.time);
+  }
+  end(){
     clearTimeout(myVar);
+  }
 }
-
-
 </script>
 
 </body>
