@@ -282,17 +282,34 @@ class Things {
     this.xy = xy;
     this.radius=radius;
     this.render = rd;
+    this.body = undefined;
+    this.loop = undefined;
+    this.loopdo = undefined;
   }
-  addbd(bd,xy) {
-    thingsp.thingss.push(bd);
+  g(){
+    return {xy:this.xy,
+    radius:this.radius,
+    render:this.render,
+    body:this.body,
+    loop:this.loop,
+    loopdo:this.loopdo}
+  }
+  addbd(xy) {
+    thingsp.thingss.push(this.body);
     thingsp.thingssxy.push(xy.x+","+xy.y);
     thingsp.thingssxyx.push((xy.x+1)+","+xy.y);
     thingsp.thingssxyy.push(xy.x+","+(xy.y+1));
-    return bd;
+    return this.body;
   }
-  follow(bd){
-    slookat.x=bd.position.x;
-    slookat.y=bd.position.y;
+  follow(){
+    slookat.x=this.body.position.x;
+    slookat.y=this.body.position.y;
+  }
+  start(){
+    this.loop=setTimeout(this.loopdo,100);
+  }
+  stop(){
+    clearTimeout(this.loop);
   }
 }
 class Box extends Things {
@@ -300,12 +317,12 @@ class Box extends Things {
     super(xy,undefined,rd);
   }
   create() {
-    let bd=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
-    boxsp.boxss.push(bd);
+    this.body=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
+    boxsp.boxss.push(this.body);
     boxsp.boxssxy.push(this.xy.x+","+this.xy.y);
     boxsp.boxssxyx.push((this.xy.x+1)+","+this.xy.y);
     boxsp.boxssxyy.push(this.xy.x+","+(this.xy.y+1));
-    return bd;
+    return this.body;
   }
 }
 class Circle extends Things {
@@ -313,8 +330,10 @@ class Circle extends Things {
     super(xy,radius,rd);
   }
   create() {
-    let bd=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
-    return this.addbd(bd,this.xy);
+    this.body=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
+    let curobj=this;
+    this.loopdo=function(){addforce(curobj.body,0.44);curobj.start();};
+    return this.addbd(this.xy);
   }
 }
 class Wheel extends Things {
@@ -323,10 +342,10 @@ class Wheel extends Things {
     this.range=range;
   }
   create() {
-    let bd=wwheel(this.xy.x*lattice, this.xy.y*lattice, 8.5, 58, 34, this.render.wsjx.render, this.render.wcircle.render);
-    logs(Composite.allBodies(bd)[0].position.y)
-    Composite.rotate(bd, this.range, {x:1,y:5}, true)
-    return this.addbd(bd,this.xy);
+    this.body=wwheel(this.xy.x*lattice, this.xy.y*lattice, 8.5, 58, 34, this.render.wsjx.render, this.render.wcircle.render);
+    logs(Composite.allBodies(this.body)[0].position.y)
+    Composite.rotate(this.body, this.range, {x:1,y:5}, true)
+    return this.addbd(this.xy);
   }
 }
 class Rocket extends Things {
@@ -334,19 +353,37 @@ class Rocket extends Things {
     super(xy,undefined,rd);
     this.range=range;
   }create() {
-    
+    this.body=undefined;
+    this.loopdo=function(){
+      Body.setVelocity( this.body, {x: 0, y: -20});
+      curobj.start();
+    }
+  }
+}
+class Dpen extends Things {
+  constructor(xy,rd) {
+    super(xy,undefined,rd);
+  }create() {
+    this.body=Bodies.polygon((this.xy.x+0.25)*lattice, this.xy.y*lattice, 3, 50, this.render);
+    return this.addbd(this.xy);
+  }
+  start(){
+    addforce(this.body,0.44);
   }
 }
 function thingsadd(things){things.create();}
   try{
-
+var dpen=new Dpen({x:0,y:0},toptions.dp0).create()
   new Box({x:1,y:0},toptions.febox0).create()
   new Box({x:2,y:0},toptions.febox0).create()
-  var b2=new Box({x:3,y:0},toptions.febox0).create()
-
+  var b1=new Box({x:3,y:0},toptions.febox0);var b2=b1.create()
+//b1.start()
+//Matter.Events.on(b2, "click", function(e){logs(e)})
 new Wheel({x:1,y:1},0,toptions.muwheel0).create();
 var wheel=new Wheel({x:3,y:1},0,toptions.muwheel0).create();
-var pig0=new Circle({x:2,y:0},45,toptions.pig0).create()
+var pig00=new Circle({x:2,y:0},45,toptions.pig0)
+var pig0=pig00.create()
+
   }catch(e){logs(e)}
 
 var bodyss=thingsp.thingss.concat(boxsp.boxss);
@@ -373,18 +410,18 @@ for(var i=0,b=compareAr(boxsp.boxssxy, thingsp.thingssxy);i<b.length;i++){
 } 
 
 //var c0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy, x: boxsp.boxssxy.x + 1 }));
-var c=compareAr(boxsp.boxssxy,boxsp.boxssxyx);//x轴连接
 //var d0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy,y:boxsp.boxssxy.y+1}));
-var d=compareAr(boxsp.boxssxy,boxsp.boxssxyy);//y轴连接
 
-for(var i=0;i<c.length;i++){
+for(var i=0,c=compareAr(boxsp.boxssxy,boxsp.boxssxyx);i<c.length;i++){
     bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(c[i])],boxsp.boxss[boxsp.boxssxyx.indexOf(c[i])],{x:-30,y:0},1));
 }//x轴连接框框
-for(var i=0;i<d.length;i++){
+for(var i=0,d=compareAr(boxsp.boxssxy,boxsp.boxssxyy);i<d.length;i++){
     bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(d[i])],boxsp.boxss[boxsp.boxssxyy.indexOf(d[i])],{x:0,y:-30},1));
 }//y轴连接框框
-try{bodyss=bodyss.concat(connectAB(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));}catch(e){logs(e)}
-
+try{bodyss=bodyss.concat(connectAB(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));
+bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],Composite.allBodies(thingsp.thingss[thingsp.thingssxy.indexOf("1,1")])[0],{x:0,y:30},1));
+bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],thingsp.thingss[thingsp.thingssxy.indexOf("0,0")],{x:-30,y:0},1));
+}catch(e){logs(e)}
 //bodyss=bodyss.concat(connectAB());
 //function duplicates(arr) {
 //    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
@@ -421,7 +458,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
         collisionFilter: {
             group: group
         },
-        friction: 0.8
+        friction: 0.5
     });
 
     let axelA = Constraint.create({
@@ -452,8 +489,14 @@ function createcst(bodya,bodyb,move,stiffness,angularStiffness,length,movem){
         pointB: { x: xb, y: yb },
         bodyA: bodya,
         bodyB: bodyb,
-        stiffness: stiffness,
-        angularStiffness: angularStiffness,
+        // stiffness: stiffness,
+        // angularStiffness: 1,
+        // angleAStiffness: 1,
+        // angleBStiffness: 1,
+        // angleAMin: 0,
+        // angleBMin: 0,
+        // angleBMax: 0,
+        // angleB: 0,
         damping: 0,
         length: length,
         type: 'constraint'
@@ -509,7 +552,7 @@ var we=wwheel(2*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptio
 // createing 创建物品
 //var spring = Bodies.rectangle(200, 100, 70, 100, toptions.spring);//0弹簧
 var ground = Bodies.rectangle(400, 610, 9910, 60, { isStatic: true });//地面
-var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, toptions.dp0)
+//var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, toptions.dp0)
 
 var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
 //Composite.add(engine.world, [circleth]);
@@ -600,12 +643,13 @@ class Scene {
   x = 0; // 记录鼠标点击Canvas时的横坐标
   y = 0; // 记录鼠标点击Canvas时的纵坐标
   touchOffset2 = { x: 0, y: 0 };// 记录第二指触摸点击Canvas时的坐标
+  mousePosition = { x: 0, y: 0 };
 
   constructor(id, options = {
     width: render.options.width,
     height: render.options.height
   }) {
-    this.canvas = document.querySelector('#canvas');
+    this.canvas = render.canvas;//document.querySelector('#canvas');
     this.width = options.width;
     this.height = options.height;
     this.canvas.width = options.width;
@@ -615,6 +659,8 @@ class Scene {
     this.onMousemove = this.onMousemove.bind(this);
     this.onMouseup = this.onMouseup.bind(this);
     this.canvas.addEventListener('mousedown', this.onMousedown);
+    this.onMousewheel = this.onMousewheel.bind(this);
+    this.canvas.addEventListener('mousedown', this.onMousewheel);
     this.onTouchstart=this.onTouchstart.bind(this);
     this.onTouchmove=this.onTouchmove.bind(this);
     this.onTouchend=this.onTouchend.bind(this);
@@ -649,8 +695,48 @@ class Scene {
     window.removeEventListener('mouseup', this.onMouseup);
   }
 
+  onMousewheel(e) {
+    e.preventDefault();
+  
+    this.mousePosition.x = e.offsetX; // 记录当前鼠标点击的横坐标
+    this.mousePosition.y = e.offsetY; // 记录当前鼠标点击的纵坐标
+    if (e.wheelDelta > 0) {
+      // 放大
+      this.scale = parseFloat((this.scaleStep + this.scale).toFixed(2)); // 解决小数点运算丢失精度的问题
+      if (this.scale > this.maxScale) {
+        this.scale = this.maxScale;
+        return;
+      }
+    } else {
+      // 缩小
+      this.scale = parseFloat((this.scale - this.scaleStep).toFixed(2)); // 解决小数点运算丢失精度的问题
+      if (this.scale < this.minScale) {
+        this.scale = this.minScale;
+        return;
+      }
+    }
+  
+    this.offset.x = this.mousePosition.x - ((this.mousePosition.x -   this.offset.x) * this.scale) / this.preScale;
+    this.offset.y = this.mousePosition.y - ((this.mousePosition.y - this.offset.y) * this.scale) / this.preScale;
+  
+    this.ctx.translate(this.offset.x, this.offset.y);
+    this.ctx.scale(this.scale, this.scale);
+    this.preScale = this.scale;
+    this.curOffset.x = this.offset.x;
+    this.curOffset.y = this.offset.y;
+  }
+
+  // paint() {
+    // this.clear();
+    // this.ctx.translate(this.offset.x, this.offset.y);
+    // this.ctx.scale(this.scale, this.scale);
+    // this.draw();
+  // }
+
+
   //触摸屏
   onTouchstart(e) {
+    //e.preventDefault();
     this.x = e.targetTouches[0].pageX;
     this.y = e.targetTouches[0].pageY;
     if(e.targetTouches[1]){
@@ -662,15 +748,18 @@ class Scene {
   }
   
   onTouchmove(e){
-    lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0)
+    //e.preventDefault();
+    //lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0);
+    let changex=render.canvas.offsetWidth/render.options.width;
+    let changey=render.canvas.offsetHeight/render.options.height;
     if(e.targetTouches[1]){
-      try{lookat(0,0,(Math.sqrt(Math.pow(this.x-this.touchOffset2.x,2) + Math.pow(this.y-this.touchOffset2.y,2)) / Math.sqrt(Math.pow(e.targetTouches[0].pageX-e.targetTouches[1].pageX,2) + Math.pow(e.targetTouches[0].pageY-e.targetTouches[1].pageY,2))),true);}catch(e){logs(e)}
+      lookat(0,0,(Math.sqrt(Math.pow((this.x-this.touchOffset2.x)/changex,2) + Math.pow((this.y-this.touchOffset2.y)/changey,2)) / Math.sqrt(Math.pow((e.targetTouches[0].pageX-e.targetTouches[1].pageX)/changex,2) + Math.pow((e.targetTouches[0].pageY-e.targetTouches[1].pageY)/changey,2))),true);
       this.x = e.targetTouches[0].pageX;
       this.y = e.targetTouches[0].pageY;
       this.touchOffset2.x=e.targetTouches[1].pageX;
       this.touchOffset2.y=e.targetTouches[1].pageY;
     }else{
-      lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0);
+      lookat(-(e.targetTouches[0].pageX - this.x)/changex, -(e.targetTouches[0].pageY - this.y)/changey, 0);
       this.x = e.targetTouches[0].pageX;
       this.y = e.targetTouches[0].pageY;
     }
@@ -711,7 +800,9 @@ var slookat={
 x:render.options.width/2,
 y:render.options.height/2,
 size:1,
-body:undefined
+body:undefined,
+cx:0,
+cy:0
 }
 slookat.body=pig0;
 function lookat(x,y,csize,csizex){
@@ -724,16 +815,21 @@ function lookat(x,y,csize,csizex){
     slookat.size+=csize;
   }
   let size=slookat.size;
+  if(dgbyid("check").checked){
+  slookat.cx+=x*size;
+  slookat.cy+=y*size;
+  }else{
   slookat.x+=x*size;
   slookat.y+=y*size;
+  }
   Render.lookAt(render, {
     min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
     max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
   });
 }
 function followthings(){
-slookat.x=slookat.body.position.x;
-slookat.y=slookat.body.position.y;
+slookat.x=slookat.body.position.x+slookat.cx;
+slookat.y=slookat.body.position.y+slookat.cy;
 lookat(0,0,0)
 }
 Events.on(runner, "beforeUpdate", function(){
@@ -751,7 +847,29 @@ Events.on(runner, "beforeUpdate", function(){
 });
 render.canvas.ondblclick=function(){
   dgbyid("check").checked=(!dgbyid("check").checked);
+  slookat.cx=0;
+  slookat.cy=0;
 }
+
+function boom(){
+Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+    
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+        var pair = pairs[i];
+
+        if (pair.bodyA === bodyss[0]) {
+            //pair.bodyB.render.strokeStyle = colorA;
+            //Body.applyForce( pair.bodyB, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
+            Body.applyForce( pair.bodyB, {x: pair.bodyA.position.x, y: pair.bodyA.position.y}, {x: pair.bodyA.position.x, y: pair.bodyA.position.y});
+        } else if (pair.bodyB === bodyss[0]) {
+            //pair.bodyA.render.strokeStyle = colorA;
+        }
+    }
+});
+}
+
+
 /*Events.on(render, 'beforeRender', function() {
         var world = engine.world,
             mouse = mouseConstraint.mouse,
