@@ -31,8 +31,19 @@ position:fixed;top:10;right:10;color:#fff;font-size:32px;background:black;opacit
     opacity:50%
 }
 
-
-
+input[type=checkbox]{
+visibility: hidden;
+}
+input[type=checkbox]::after{
+content:" ";
+display:block;
+width:40px;
+height:40px;
+background:green;
+}
+input[type=checkbox]:checked::after{
+background:blue;
+}
 
 hr {
     height:1px;
@@ -156,8 +167,8 @@ div.sesw{
   transition: .4s;
 }
 input:checked + .slider {
-  background-color: #ff0000;
-  /*background-color: #2196F3;*/
+  /*background-color: #ff0000;*/
+  background-color: #2196F3;
 }
 input:focus + .slider {
   box-shadow: 0 0 1px #2196F3;
@@ -179,7 +190,7 @@ input:checked + .slider:before {
     src: url()
 }*/
 </style>
-<link rel="stylesheet" href="style.css">
+<!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
 <body>
@@ -234,7 +245,7 @@ var Engine = Matter.Engine,
     Events = Matter.Events,
     Example = Matter.Example;
     
-Matter.use('matter-springs');//弹簧插件
+//Matter.use('matter-springs');//弹簧插件
 
 // create an engine
 var engine = Engine.create();
@@ -252,7 +263,7 @@ var render = Render.create({
         showAngleIndicator: true,
         showDebug:true,
         showIds: true,
-         wireframes: false//线框模式
+         wireframes: true//线框模式
     }
 });
 
@@ -389,10 +400,8 @@ var pig0=pig00.create()
 var bodyss=thingsp.thingss.concat(boxsp.boxss);
 
 
-//var a=new Array();
-//数组内双向对比，给b赋值重复出现的值。
-//var b=duplicates(a);
 
+//数组内双向对比，赋值重复出现的值。
 
 //连接框与其内物
 function compareAr(arr1, arr2, rearr1) {
@@ -493,10 +502,6 @@ function createcst(bodya,bodyb,move,stiffness,angularStiffness,length,movem){
         // angularStiffness: 1,
         // angleAStiffness: 1,
         // angleBStiffness: 1,
-        // angleAMin: 0,
-        // angleBMin: 0,
-        // angleBMax: 0,
-        // angleB: 0,
         damping: 0,
         length: length,
         type: 'constraint'
@@ -506,9 +511,9 @@ function createcst2(bodya,bodyb,pointa,stiffness,angularStiffness,length){
     //create new Constraint
     return Constraint.create({
         pointA: pointa,
-        pointB: { 
-            x: pointa.y===30||-30 ? -pointa.x : -pointa.y, 
-            y: pointa.x===30||-30 ? -pointa.y : -pointa.x 
+        pointB: {
+            x: pointa.y===30||-30 ? -pointa.x : -pointa.y,
+            y: pointa.x===30||-30 ? -pointa.y : -pointa.x
         },
         bodyA: bodya,
         bodyB: bodyb,
@@ -551,7 +556,11 @@ var we=wwheel(2*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptio
 
 // createing 创建物品
 //var spring = Bodies.rectangle(200, 100, 70, 100, toptions.spring);//0弹簧
-var ground = Bodies.rectangle(400, 610, 9910, 60, { isStatic: true });//地面
+var ground = [
+  Bodies.rectangle(400, 1110, 9910, 60, { isStatic: true }),
+  Bodies.rectangle(400, 610, 910, 70, { isStatic: true })
+];
+//地面
 //var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, toptions.dp0)
 
 var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
@@ -619,7 +628,7 @@ var bcst = [];
 
 //添加所有物品到world里
 //Composite.add(engine.world, [mubox0, febox0, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
-Composite.add(engine.world, [ground])
+Composite.add(engine.world, ground)
 //Composite.add(engine.world, acst.concat(bcst))
 Composite.add(engine.world, bodyss)
 
@@ -644,23 +653,31 @@ class Scene {
   y = 0; // 记录鼠标点击Canvas时的纵坐标
   touchOffset2 = { x: 0, y: 0 };// 记录第二指触摸点击Canvas时的坐标
   mousePosition = { x: 0, y: 0 };
+  maxScale = 8;
+  minScale = 0.4;
+  scaleStep = 0.2;
+  scale = 1;
+  preScale = 1;
+  isMove = 0;
 
-  constructor(id, options = {
+  constructor(element=render.canvas, options = {
     width: render.options.width,
     height: render.options.height
   }) {
-    this.canvas = render.canvas;//document.querySelector('#canvas');
+    this.canvas = element;
     this.width = options.width;
     this.height = options.height;
     this.canvas.width = options.width;
     this.canvas.height = options.height;
     this.ctx = this.canvas.getContext('2d');
+    
     this.onMousedown = this.onMousedown.bind(this);
     this.onMousemove = this.onMousemove.bind(this);
     this.onMouseup = this.onMouseup.bind(this);
     this.canvas.addEventListener('mousedown', this.onMousedown);
     this.onMousewheel = this.onMousewheel.bind(this);
-    this.canvas.addEventListener('mousedown', this.onMousewheel);
+    this.canvas.addEventListener('mousewheel', this.onMousewheel);
+    
     this.onTouchstart=this.onTouchstart.bind(this);
     this.onTouchmove=this.onTouchmove.bind(this);
     this.onTouchend=this.onTouchend.bind(this);
@@ -682,9 +699,14 @@ class Scene {
   onMousemove(e) {
    this.offset.x = this.curOffset.x + (e.x - this.x);
    this.offset.y = this.curOffset.y + (e.y - this.y);
-   logs(e.x)
 
-   this.paint();
+   //this.paint();
+   
+   let changex=render.canvas.offsetWidth/render.options.width;
+   let changey=render.canvas.offsetHeight/render.options.height;
+   lookat(-(e.x - this.x)/changex, -(e.y - this.y)/changey, 0);
+   this.x=e.x;
+   this.y=e.y;
   }
 
   onMouseup() {
@@ -693,11 +715,13 @@ class Scene {
     //logs(this.curOffset.x)
     window.removeEventListener('mousemove', this.onMousemove);
     window.removeEventListener('mouseup', this.onMouseup);
+    this.remember();
   }
 
   onMousewheel(e) {
+    try{
     e.preventDefault();
-  
+  logs(e.wheelDelta)
     this.mousePosition.x = e.offsetX; // 记录当前鼠标点击的横坐标
     this.mousePosition.y = e.offsetY; // 记录当前鼠标点击的纵坐标
     if (e.wheelDelta > 0) {
@@ -716,14 +740,18 @@ class Scene {
       }
     }
   
-    this.offset.x = this.mousePosition.x - ((this.mousePosition.x -   this.offset.x) * this.scale) / this.preScale;
+    this.offset.x = this.mousePosition.x - ((this.mousePosition.x - this.offset.x) * this.scale) / this.preScale;
     this.offset.y = this.mousePosition.y - ((this.mousePosition.y - this.offset.y) * this.scale) / this.preScale;
+    //lookat(this.offset.x,this.offset.y,this.scale)
+    lookat(0,0,-e.wheelDelta/Math.abs(e.wheelDelta)*parseFloat((this.scaleStep).toFixed(2)))
   
-    this.ctx.translate(this.offset.x, this.offset.y);
-    this.ctx.scale(this.scale, this.scale);
+    //this.ctx.translate(this.offset.x, this.offset.y);
+    //this.ctx.scale(this.scale, this.scale);
     this.preScale = this.scale;
     this.curOffset.x = this.offset.x;
     this.curOffset.y = this.offset.y;
+    }catch(e){logs(e)}
+    logs(0)
   }
 
   // paint() {
@@ -749,7 +777,6 @@ class Scene {
   
   onTouchmove(e){
     //e.preventDefault();
-    //lookat(-(e.targetTouches[0].pageX - this.x), -(e.targetTouches[0].pageY - this.y), 0);
     let changex=render.canvas.offsetWidth/render.options.width;
     let changey=render.canvas.offsetHeight/render.options.height;
     if(e.targetTouches[1]){
@@ -763,6 +790,7 @@ class Scene {
       this.x = e.targetTouches[0].pageX;
       this.y = e.targetTouches[0].pageY;
     }
+    this.isMove=1;
     //this.offset.x = this.curOffset.x + (e.targetTouches[0].pageX - this.x);
     //this.offset.y = this.curOffset.y + (e.targetTouches[0].pageY - this.y);
     //this.paint();
@@ -773,14 +801,14 @@ class Scene {
     this.curOffset.y = this.offset.y;
     window.removeEventListener('touchmove', this.onTouchmove);
     window.removeEventListener('touchend', this.onTouchend);
+    this.remember();
+    if(this.isMove===0){
+      
+    }else{this.isMove=0;}
   }
   
-  draw() {/*
-    this.ctx.fillStyle = 'red';
-    this.ctx.fillRect(50, 50, 50, 50);
-
-    this.ctx.fillStyle = 'green';
-    this.ctx.fillRect(150, 150, 50, 50);*/
+  draw() {
+      //none  
   }
 
   clear() {
@@ -793,23 +821,32 @@ class Scene {
     //this.draw();
     lookat(this.offset.x, this.offset.y,0)
   }
+  
+  remember() {
+    localStorage.slookat=slookat.x+","+slookat.y;
+  }
 }new Scene();
 
 
 var slookat={
-x:render.options.width/2,
-y:render.options.height/2,
+x: render.options.width/2,
+y: render.options.height/2,
 size:1,
 body:undefined,
 cx:0,
 cy:0
 }
+if(localStorage.slookat){
+slookat.x=Number(localStorage.slookat.split(",")[0]);
+slookat.y=Number(localStorage.slookat.split(",")[1]);
+lookat(0,0,0);
+}
 slookat.body=pig0;
 function lookat(x,y,csize,csizex){
   if(csizex){
-    if(slookat.size*csize>0.5&&slookat.size*csize<50){
+    if(slookat.size*csize>1&&slookat.size*csize<50){
       slookat.size*=csize;
-    }else if(slookat.size*csize<0.5){slookat.size=0.5}
+    }else if(slookat.size*csize<1){slookat.size=1}
     else if(slookat.size*csize>50){slookat.size=50}
   }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
     slookat.size+=csize;
@@ -837,13 +874,17 @@ Events.on(runner, "beforeUpdate", function(){
   let ctx=render.canvas.getContext("2d");
   ctx.font="25px Arial";
   ctx.textAlign="start";
-  ctx.fillText("雀斑猪速度: "+Math.round(pig0.speed*10)/10,50,125);
-  ctx.fillText("雀斑猪位置: ("+Math.round(pig0.position.x/100)+","+Math.round(pig0.position.y/100)+")",50,150);
-  ctx.fillText("雀斑猪角度: "+Math.round(pig0.angle*10)/10,50,175);
-  ctx.fillText("雀斑猪角速度: "+Math.round(pig0.angularSpeed*10)/10,50,200);
-  ctx.fillText("视野大小: "+Math.round(slookat.size*5*100)/100,50,225);
-  ctx.fillText("视野位置: ("+Math.round(slookat.x/100)+","+Math.round(slookat.y/100)+")",50,250);
-  
+  let filltexts=[
+    "雀斑猪速度: "+Math.round(pig0.speed*10)/10,
+    "雀斑猪位置: ("+Math.round(pig0.position.x/100)+","+Math.round(pig0.position.y/100)+")",
+    "雀斑猪角度: "+Math.round(pig0.angle/Math.PI*180*10)/10,
+    "雀斑猪角速度: "+Math.round(pig0.angularSpeed*10)/10,
+    "视野大小: "+Math.round(slookat.size*5*100)/100,
+    "视野位置: ("+Math.round(slookat.x/100)+","+Math.round(slookat.y/100)+")",
+  ];
+  for(var i=0;i<filltexts.length;i++){
+    ctx.fillText(filltexts[i], 50, i*25+125);
+  }
 });
 render.canvas.ondblclick=function(){
   dgbyid("check").checked=(!dgbyid("check").checked);
@@ -870,42 +911,7 @@ Events.on(engine, 'collisionStart', function(event) {
 }
 
 
-/*Events.on(render, 'beforeRender', function() {
-        var world = engine.world,
-            mouse = mouseConstraint.mouse,
-            translate;
 
-        // mouse wheel controls zoom
-        var scaleFactor = mouse.wheelDelta * -0.1;
-        if (scaleFactor !== 0) {
-            if ((scaleFactor < 0 && boundsScale.x >= 0.6) || (scaleFactor > 0 && boundsScale.x <= 1.4)) {
-                boundsScaleTarget += scaleFactor;
-            }
-        }
-
-        // if scale has changed
-        if (Math.abs(boundsScale.x - boundsScaleTarget) > 0.01) {
-            // smoothly tween scale factor
-            scaleFactor = (boundsScaleTarget - boundsScale.x) * 0.2;
-            boundsScale.x += scaleFactor;
-            boundsScale.y += scaleFactor;
-
-            // scale the render bounds
-            render.bounds.max.x = render.bounds.min.x + render.options.width * boundsScale.x;
-            render.bounds.max.y = render.bounds.min.y + render.options.height * boundsScale.y;
-
-            // translate so zoom is from centre of view
-            translate = {
-                x: render.options.width * scaleFactor * -0.5,
-                y: render.options.height * scaleFactor * -0.5
-            };
-
-            Bounds.translate(render.bounds, translate);
-
-            // update mouse
-            Mouse.setScale(mouse, boundsScale);
-            Mouse.setOffset(mouse, render.bounds.min);
-        }*/
 
 dgbyid("bu1").addEventListener('click', function () {
     //Body.scale( mubox0, 1.5, 1.2);//放大
@@ -914,10 +920,10 @@ dgbyid("bu1").addEventListener('click', function () {
     //Composite.remove(mwheel,mcst)
     //Matter.Body.setStatic(body, true)
     //myVar=nwnw
-    lookat(0,0,0.1)
+    //lookat(0,0,0.1)
 });
 dgbyid("bu2").addEventListener('click', function () {//旋转
-    Body.rotate( pig0, Math.PI/50);
+    Body.rotate( pig0, Math.PI/180*45);
 });
 dgbyid("bu3").addEventListener('click', function () {//移动
     Body.translate( mubox0, {x: 40, y: -20});
@@ -928,11 +934,12 @@ dgbyid("bu4").addEventListener('click', function () {//移动速度
     Body.setVelocity( pig0, {x: 10, y: -10});
 });
 dgbyid("bu5").addEventListener('click', function () {//旋转速度
-    Body.setAngularVelocity( Composite.allBodies(wheel)[1], Math.PI/10);
+    Body.setAngularVelocity( Composite.allBodies(wheel)[1], Math.PI/180*40);
     //Body.setAngularVelocity( mubox0, Math.PI/6);
 });
 dgbyid("bu6").addEventListener('click', function () {//施加力向右
-    addforce(dpen,0.44);
+    //addforce(dpen,0.44);
+    addvelocity(dpen,100);
     //Body.applyForce( obja, {x: obja.position.x, y: obja.position.y}, {x: 0.44, y: 0});
 });
 dgbyid("bu7").addEventListener('click', function () {//向上力
@@ -952,6 +959,9 @@ function addforce(thebody,m){
     let n=thebody.angle;
     Body.applyForce( thebody, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
 }
+function addvelocity(thebody,m){
+  try{let n=thebody.angle;Body.setVelocity( thebody, {x:m*Math.cos(n), y:m*Math.sin(n)});}catch(e){logs(e)}
+}
 
 function logs(e){
 dgbyid("log").innerHTML+=e+", ";
@@ -962,18 +972,6 @@ function doing(){
 setTimeout('doing()',100)
 }
 
-class Loop {
-  constructor(does,time){
-  this.does=does;
-  this.time=time;
-  }
-  start(){
-    setTimeout(function(){start(),eval(this.does)},this.time);
-  }
-  end(){
-    clearTimeout(myVar);
-  }
-}
 </script>
 
 </body>
