@@ -42,7 +42,8 @@ var toptions = {//贴图
         }
       },collisionFilter: {
         //group: groupx[0]
-      }, mass: 1
+      }, mass: 1,
+      label: {name: "pig"}
     }, egg0:{//0鸟蛋
       render: {
         sprite: {
@@ -126,6 +127,40 @@ var toptions = {//贴图
         }
       }, collisionFilter: {
         //group: -1,
-      }, mass: 1
+      }, mass: 1,
+      label:{
+        name:"dpen"
+      }
+    }, tnt0:{//tnt
+      render: {
+        sprite: {
+          texture: "https://s1.imagehub.cc/images/2023/05/03/IngameAtlas.png",
+          cutx: 681,
+          cuty: 630,
+          cutwidth: 106,
+          cutheight: 106,
+          xScale: 0.04,
+          yScale: 0.04
+        }
+      }, collisionFilter: {
+        //group: -1,
+      }, mass: 1,
+      label: {
+        name:"TNT",
+        erange:200,
+        eforce:1
+      }
+    }, explodeball: {
+      render: {
+        sprite: {
+          texture: "https://s1.imagehub.cc/images/2023/05/03/Particles_Sheet_01.png",
+          cutx: 0,
+          cuty: 260,
+          cutwidth: 260,
+          cutheight: 260,
+          xScale: 1,
+          yScale: 1
+        }
+      }
     }
 };//贴图结束

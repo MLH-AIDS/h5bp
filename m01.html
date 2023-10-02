@@ -199,19 +199,11 @@ input:checked + .slider:before {
 <div id="tool" onclick="tool('block')"><i class="fa fa-gear"></i></div>
 <div id="set"></div>
 <div class="bu">
-<button class="bu" id="bu1">bu1</button>
-<button class="bu" id="bu2">bu2</button>
-<button class="bu" id="bu3">bu3</button>
-<button class="bu" id="bu4">bu4</button>
-<button class="bu" id="bu5">bu5</button>
-<button class="bu" id="bu6">bu6</button>
-<button class="bu" id="bu7">bu7</button>
-<button class="bu" id="bu8">bu8</button>
-<button class="bu" id="bu9">bu9</button>
-<button onclick="document.documentElement.webkitRequestFullScreen();">全屏</button>
-<input type="range" min="0" max="10" step="1" oninput="lookat(0,0,(this.value-5)*0.1);this.value=5;">
-<input type="range" min="0" max="10" step="1" oninput="lookat((this.value-5)*10,0,0);this.value=5;">
-<input type="range" min="0" max="10" step="1" oninput="lookat(0,(this.value-5)*10,0);this.value=5;">
+
+<button id="fullscreen" onclick="document.documentElement.webkitRequestFullScreen();">全屏</button>
+<input type="range" min="0" max="10" step="1" oninput="slookat.lookat(0,0,(this.value-5)*0.1);this.value=5;">
+<input type="range" min="0" max="10" step="1" oninput="slookat.lookat((this.value-5)*10,0,0);this.value=5;">
+<input type="range" min="0" max="10" step="1" oninput="slookat.lookat(0,(this.value-5)*10,0);this.value=5;">
 <input type="text" onchange="eval(this.value)">
 <input type="checkbox" id="check">
 </div>
@@ -229,6 +221,29 @@ if(true){dgbyid("set").innerHTML='<div style="text-align:center;">设置<div cla
 function tool(display){
 dgbyid("set").style.display=display;
 }
+tool("none")
+
+function at(n) {
+    // ToInteger() abstract op
+    n = Math.trunc(n) || 0;
+    // Allow negative indexing from the end
+    if (n < 0) n += this.length;
+    // OOB access is guaranteed to return undefined
+    if (n < 0 || n >= this.length) return undefined;
+    // Otherwise, this is just normal property access
+    return this[n];
+}
+const TypedArray = Reflect.getPrototypeOf(Int8Array);
+for (const C of [Array, String, TypedArray]) {
+    Object.defineProperty(C.prototype, "at",
+        {
+            value: at,
+            writable: true,
+            enumerable: false,
+            configurable: true
+        });
+}
+
 
 //matter0.19
 // module模块 aliases
@@ -242,13 +257,18 @@ var Engine = Matter.Engine,
     Body = Matter.Body,
     MouseConstraint = Matter.MouseConstraint,
     Mouse = Matter.Mouse,
+    Query = Matter.Query,
     Events = Matter.Events,
-    Example = Matter.Example;
+    Example = Matter.Example,
+    Vector = Matter.Vector;
     
 //Matter.use('matter-springs');//弹簧插件
 
 // create an engine
-var engine = Engine.create();
+var engine = Engine.create({
+  gravity:{x:0,y:1.2},
+  timing:{timeScale:1}
+});
 
 // create a renderer
 var render = Render.create({
@@ -260,13 +280,17 @@ var render = Render.create({
         height: 675,
         background:"url(https://s1.imagehub.cc/images/2023/05/14/Night_Sky_Texture.png)",
         hasBounds:true,
-        showAngleIndicator: true,
+        //showAngleIndicator: true,
+        showPerformance: true,
         showDebug:true,
         showIds: true,
-         wireframes: true//线框模式
+        //showSeparations: true,
+        //showVelocity: true,
+         wireframes: false//线框模式
     }
 });
 
+//创造界面
 
 
 </script>
@@ -275,7 +299,141 @@ var render = Render.create({
 <!--/*  贴图等  */-->
 
 <script>
-var lattice;lattice=100;
+var controlConstraint={
+  create: function(bodya,bodyb,move,stiffness,angularStiffness,length,movem){
+      let xx = 0,
+          yy = 0,
+          xb=0,
+          yb=0;
+      movem=movem || 20
+      return Constraint.create({
+          pointA: { x: xx, y: yy },
+          pointB: { x: xb, y: yb },
+          bodyA: bodya,
+          bodyB: bodyb,
+          // stiffness: stiffness,
+          damping: 0,
+          length: length,
+          type: 'constraint'
+      });
+  },
+  create2: function(bodya,bodyb,pointa,stiffness,angularStiffness,length){
+    return Constraint.create({
+        pointA: pointa,
+        pointB: {
+            x: pointa.y===30||-30 ? -pointa.x : -pointa.y,
+            y: pointa.x===30||-30 ? -pointa.y : -pointa.x
+        },
+        bodyA: bodya,
+        bodyB: bodyb,
+        stiffness: stiffness,
+        angularStiffness: angularStiffness,
+        length: length,
+        type: 'constraint'
+    });
+  },
+  connect: function(bodya,bodyb,pointa,stiffness){
+    if(pointa.x!==0){xx=pointa.x;xb=xx;yy=20;yb=-20;}
+    else{xx=20;xb=-20;yy=pointa.y;yb=yy;}
+    return [this.create2(bodya,bodyb,{x:xx,y:yy},stiffness,0.7),
+    this.create2(bodya,bodyb,pointa,stiffness,0.7),
+    this.create2(bodya,bodyb,{x:xb,y:yb},stiffness,0.7)]
+  }
+};
+
+
+var lattice=100;
+
+var buildgird = {
+  size: 100,
+  positiontogird:function(position){
+    return {x: position.x/100, y: position.y/100};
+  },
+  girdtoposition:function(position){
+    return {x: position.x*100, y: position.y*100};
+  },
+  issameposition:function(oa,ob){
+    return oa.x===ob.x&&oa.y===ob.y;
+  },
+  gird: Composites.stack(-100-50, -100-50, 4, 3, 0, 0, function(x, y) {
+    return Bodies.rectangle(x, y, 100, 100, {
+      render: {
+        //fillStyle: 'rgba(0,0,0,0.5)',
+        //strokeStyle: 'black'
+        sprite: {
+            texture: "https://s1.imagehub.cc/images/2023/05/03/MenuAtlas2.png",
+            cutx: 1774,
+            cuty: 1412,
+            cutwidth: 195,
+            cutheight: 195,
+            xScale: 0.050,
+            yScale: 0.050
+        }
+      },
+      isStatic:true,
+      isSensor:true,
+      label: {
+        name: "gird",
+        insidebox: undefined,
+        insidebody: undefined
+      }
+    });
+  }),
+  move: function(position,absolute){
+    if(absolute){
+      position=buildgird.round(Vector.sub(position,Vector.div(Vector.add(Composite.allBodies(buildgird.gird)[0].position,Composite.allBodies(buildgird.gird).at(-1).position),2)));
+    }
+    Composite.translate(buildgird.gird, position, true)
+  },
+  show: function(){
+    Composite.add(engine.world, [buildgird.gird])
+  },
+  hide: function(){
+    Composite.remove(engine.world, [buildgird.gird])
+  },
+  bodies: Composite.create({label: "buildgird"}),
+  add:function(body){
+    Composite.add(buildgird.gird,body)
+  },
+  isput:function(position){
+    return Composite.allBodies(buildgird.bodies).some((body)=>{buildgird.issameposition(body.position,position)})
+  },
+  start:function(){
+    for(let i of Composite.allBodies(buildgird.bodies)){
+      Body.setStatic(i,false);
+    }
+    Composite.move(buildgird.bodies,Composite.allBodies(buildgird.bodies),engine.world)
+  },
+  round:function(position){
+    return {
+      x:Math.round((position.x)/100)*100,
+      y:Math.round((position.y)/100)*100
+    };
+  }
+};
+buildgird.show()
+//Composite.rotate(buildgird.gird,Math.PI / 180 * 30,{x:0,y:0})
+function arrequa(arr1,arr2){
+  if(arr1.length===arr2.length){
+    for(let i=0;i<arr1.length;i++){
+      if(arr1[i]!==arr2[i]){return false}
+    }
+    return true;
+  }else{
+    return false;
+  }
+}
+var bodymodel={
+  mubox:Bodies.rectangle(0*lattice, 0*lattice, 1*lattice, 1*lattice, toptions.mubox),
+  febox:Bodies.rectangle(0*lattice, 0*lattice, 1*lattice, 1*lattice, toptions.febox),
+  //muwheel:wwheel(0*lattice, 0*lattice, 8.5, 58, 34, toption.muwheel0.wsjx.render, toption.muwheel0.wcircle.render),
+  dpen:Bodies.polygon((0+0.25)*lattice, 0*lattice, 3, 50, toptions.dpen0),
+  TNT:Bodies.rectangle(0*lattice, 0*lattice, 1*lattice, 1*lattice, toptions.tnt0),
+  g:function(){
+    ///create
+    
+  }
+};
 var thingsp={
   thingss:[],
   thingssxy:[],
@@ -343,7 +501,7 @@ class Circle extends Things {
   create() {
     this.body=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
     let curobj=this;
-    this.loopdo=function(){addforce(curobj.body,0.44);curobj.start();};
+    this.loopdo=function(){controlbody.addforce(curobj.body,0.44);curobj.start();};
     return this.addbd(this.xy);
   }
 }
@@ -379,7 +537,19 @@ class Dpen extends Things {
     return this.addbd(this.xy);
   }
   start(){
-    addforce(this.body,0.44);
+    controlbody.addforce(this.body,0.44);
+  }
+}
+class TNT extends Things {
+  constructor(xy,rd) {
+    super(xy,undefined,rd);
+  }
+  create() {
+    this.body=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
+    return this.addbd(this.xy);
+  }
+  explode(){
+    controlbody.explode(this.body.position,undefined,1);
   }
 }
 function thingsadd(things){things.create();}
@@ -387,7 +557,9 @@ function thingsadd(things){things.create();}
 var dpen=new Dpen({x:0,y:0},toptions.dp0).create()
   new Box({x:1,y:0},toptions.febox0).create()
   new Box({x:2,y:0},toptions.febox0).create()
+  new TNT({x:3,y:0},toptions.tnt0).create()
   var b1=new Box({x:3,y:0},toptions.febox0);var b2=b1.create()
+  new Box({x:3,y:-1},toptions.febox0).create()
 //b1.start()
 //Matter.Events.on(b2, "click", function(e){logs(e)})
 new Wheel({x:1,y:1},0,toptions.muwheel0).create();
@@ -404,55 +576,72 @@ var bodyss=thingsp.thingss.concat(boxsp.boxss);
 //数组内双向对比，赋值重复出现的值。
 
 //连接框与其内物
-function compareAr(arr1, arr2, rearr1) {
-  return arr1.filter((v) => {
-    return arr2.indexOf(v) !== -1;
-  });
+function generate(){
+  //生成建造内容
+  function compareAr(arr1, arr2, isposition) {
+    if(isposition){
+      return arr1.filter((v) => {
+        return arr2.map((w)=>{return w.x+","+w.y}).indexOf((v.x+","+v.y)) !== -1;
+      });
+    }else{
+      return arr1.filter((v) => {
+        return arr2.indexOf(v) !== -1;
+      });
+    }
+  }
+  //compareAr()取交集
+  for ( let i of compareAr(boxsp.boxss.map((v)=>{return v.position}), thingsp.thingss.map((v)=>{return v.position}), true) ){
+      let group=Body.nextGroup(true);
+      let b1=bodyinposition(i,boxsp.boxss);
+      let b2=bodyinposition(i,thingsp.thingss);
+      b1.collisionFilter.group=group;
+      b2.collisionFilter.group=group;
+      bodyss.push(controlConstraint.create(b1,b2,0,1,1));
+  } //连接框物
+  
+  
+  
+  for ( let i of compareAr(boxsp.boxss.map((v)=>{return v.position}),boxsp.boxss.map((v)=>{return {x:v.position.x+100,y:v.position.y}}),true) ){
+      bodyss=bodyss.concat(controlConstraint.connect(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x-100,y:i.y},boxsp.boxss),{x:-30,y:0},1));
+  }
+  for ( let i of compareAr(boxsp.boxss.map((v)=>{return v.position}),boxsp.boxss.map((v)=>{return {x:v.position.x,y:v.position.y+100}}),true) ){
+      bodyss=bodyss.concat(controlConstraint.connect(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x,y:i.y-100},boxsp.boxss),{x:0,y:-30},1));
+  }
+  function bodyinposition(position,arr){
+    for(let i of arr){
+      if(buildgird.issameposition(i.position,position)){
+      return i
+      }
+    }
+  }
+  
+  
+  try{
+  bodyss=bodyss.concat(controlConstraint.connect(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));
+  bodyss=bodyss.concat(controlConstraint.connect(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],Composite.allBodies(thingsp.thingss[thingsp.thingssxy.indexOf("1,1")])[0],{x:0,y:30},1));
+  bodyss=bodyss.concat(controlConstraint.connect(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],thingsp.thingss[thingsp.thingssxy.indexOf("0,0")],{x:-30,y:0},1));
+  }catch(e){logs(e)}
 }
-for(var i=0,b=compareAr(boxsp.boxssxy, thingsp.thingssxy);i<b.length;i++){
-    let group=Body.nextGroup(true);
-    let b1=boxsp.boxss[boxsp.boxssxy.indexOf(b[i])];
-    let b2=thingsp.thingss[thingsp.thingssxy.indexOf(b[i])];
-    b1.collisionFilter.group=group;
-    b2.collisionFilter.group=group;
-    bodyss.push(createcst(b1,b2,0,1,1));
-} 
-
-//var c0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy, x: boxsp.boxssxy.x + 1 }));
-//var d0=boxsp.boxssxy.map(boxsp.boxssxy => ({...boxsp.boxssxy,y:boxsp.boxssxy.y+1}));
-
-for(var i=0,c=compareAr(boxsp.boxssxy,boxsp.boxssxyx);i<c.length;i++){
-    bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(c[i])],boxsp.boxss[boxsp.boxssxyx.indexOf(c[i])],{x:-30,y:0},1));
-}//x轴连接框框
-for(var i=0,d=compareAr(boxsp.boxssxy,boxsp.boxssxyy);i<d.length;i++){
-    bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf(d[i])],boxsp.boxss[boxsp.boxssxyy.indexOf(d[i])],{x:0,y:-30},1));
-}//y轴连接框框
-try{bodyss=bodyss.concat(connectAB(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));
-bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],Composite.allBodies(thingsp.thingss[thingsp.thingssxy.indexOf("1,1")])[0],{x:0,y:30},1));
-bodyss=bodyss.concat(connectAB(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],thingsp.thingss[thingsp.thingssxy.indexOf("0,0")],{x:-30,y:0},1));
-}catch(e){logs(e)}
+generate()
 //bodyss=bodyss.concat(connectAB());
 //function duplicates(arr) {
 //    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
 //}
-
+for(let i of Composite.allBodies(engine.world)){
+logs(i.id)
+}
 
 function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
     yy=yy-30;
-    
-    let Body = Matter.Body,
-        Bodies = Matter.Bodies,
-        Composite = Matter.Composite,
-        Constraint = Matter.Constraint;
 
     var group = Body.nextGroup(true),
         wheelBase = 60,
-        wheelAOffset = -height * 0.5 + wheelBase,
+        wheelOffset = -height * 0.5 + wheelBase,
         wheelXOffset = 0;
     
     objectB=objectB || {};
     objectW=objectW || {};
-    let mwheel0 = Composite.create({ label: 'mwheel0' }),
+    let mwheel0 = Composite.create({ label: 'mwheel0' ,position: {x:xx,y:yy+30}}),
         body = Bodies.trapezoid(xx, yy, width, height, -10, {
             render:objectB,
             collisionFilter: {
@@ -462,7 +651,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
             //,chamfer: {radius: height * 0.5},density: 0.0002
         });
 
-    let wheelA = Bodies.circle(xx + wheelXOffset, yy + wheelAOffset, wheelSize, { 
+    let wheelA = Bodies.circle(xx + wheelXOffset, yy + wheelOffset, wheelSize, { 
         render:objectW,
         collisionFilter: {
             group: group
@@ -473,7 +662,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
     let axelA = Constraint.create({
         bodyA: wheelA,
         bodyB: body,
-        pointB: { x: wheelXOffset, y: wheelAOffset },
+        pointB: { x: wheelXOffset, y: wheelOffset },
         stiffness: 1,
         length: 0
     });
@@ -486,51 +675,8 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
     return mwheel0;
 };//生成轮子
 
-function createcst(bodya,bodyb,move,stiffness,angularStiffness,length,movem){
-    //create new Constraint
-    let xx = 0,
-        yy = 0,
-        xb=0,
-        yb=0;
-    movem=movem || 20
-    return Constraint.create({
-        pointA: { x: xx, y: yy },
-        pointB: { x: xb, y: yb },
-        bodyA: bodya,
-        bodyB: bodyb,
-        // stiffness: stiffness,
-        // angularStiffness: 1,
-        // angleAStiffness: 1,
-        // angleBStiffness: 1,
-        damping: 0,
-        length: length,
-        type: 'constraint'
-    });
-}
-function createcst2(bodya,bodyb,pointa,stiffness,angularStiffness,length){
-    //create new Constraint
-    return Constraint.create({
-        pointA: pointa,
-        pointB: {
-            x: pointa.y===30||-30 ? -pointa.x : -pointa.y,
-            y: pointa.x===30||-30 ? -pointa.y : -pointa.x
-        },
-        bodyA: bodya,
-        bodyB: bodyb,
-        stiffness: stiffness,
-        angularStiffness: angularStiffness,
-        length: length,
-        type: 'constraint'
-    });
-}
 
-function connectAB(bodya,bodyb,pointa,stiffness){
-    if(pointa.x!==0){xx=pointa.x;xb=xx;yy=20;yb=-20;}
-    else{xx=20;xb=-20;yy=pointa.y;yb=yy;}
-    return [createcst2(bodya,bodyb,{x:xx,y:yy},stiffness,0.7),
-    createcst2(bodya,bodyb,pointa,stiffness,0.7),
-    createcst2(bodya,bodyb,{x:xb,y:yb},stiffness,0.7)]
-}
+
 /*try{
 var mouse = Mouse.create(render),
 mouseConstraint = MouseConstraint.create(engine, {
@@ -550,58 +696,26 @@ render.mouse = mouse;
 //Composite.rotate( ww, Math.PI/4, {x:50,y:50}, false);
 //Composite.add(engine.world, ww)
 
-var we=wwheel(2*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptions.muwheel0.wcircle.render);
-//Composite.rotate( we, Math.PI/2, {x:0,y:0}, false);
 
 
 // createing 创建物品
-//var spring = Bodies.rectangle(200, 100, 70, 100, toptions.spring);//0弹簧
 var ground = [
-  Bodies.rectangle(400, 1110, 9910, 60, { isStatic: true }),
-  Bodies.rectangle(400, 610, 910, 70, { isStatic: true })
+  Bodies.rectangle(400, 1110, 9910, 60, { isStatic: true })
+  //Bodies.rectangle(400, 610, 910, 70, { isStatic: true })
 ];
 //地面
 //var dpen=Matter.Bodies.polygon(1.25*lattice, 2*lattice, 3, 50, toptions.dp0)
 
-var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
-//Composite.add(engine.world, [circleth]);
 
-/*****/var particleOptions = {
-/**/    friction: 0.05,
-/**/    frictionStatic: 0.1,
-/**/    render: { visible: true } 
-/**/};//圆摩擦力
-/**/var constraintOptions = {
-/**/    render: { visible: true }
-/**/};//约束线
-/*****/var softBody = Composites.softBody(100, 400, 20, 4, 0, 5, true, 15, particleOptions, constraintOptions);//软体
-
-/*Matter.Plugin.springs = [
-  Spring.create({
-    bodyA: circleth, 
-    pointB: {x: 200, y: 200}, 
-    stiffness: 0.5, 
-    damping: 1
-  })
-];//弹簧*/
+var softBody = Composites.softBody(100, 400, 20, 4, 0, 5, true, 15, {
+    friction: 0.05,
+    frictionStatic: 0.1,
+    render: { visible: true } 
+}, {
+render: { visible: true }
+});//软体
 
 
-//堆彻
-// var stack = Composites.stack(550, 100, 4, 3, 1, 0, function(x, y) {
-  // return Bodies.rectangle(x, y, 40, 20, {
-    // render: {
-      // fillStyle: 'orange',
-      // strokeStyle: 'black'
-    // }
-  // });
-//});//堆彻
-
-
-
-//mwheel[1]=Composite.create({
-//    label: 'Mwheel',
-//    parent:engine.world
-//});
 
     /**添加鼠标控制*/
     /*var mouseConstraint = Matter.MouseConstraint.create(engine, {
@@ -609,31 +723,64 @@ var circleth = Bodies.circle(400, 300, 30, {density: 0.005});
     });*/
 
 
-var mwheel2 = wwheel(3*lattice,3*lattice,8.5,58,34,toptions.muwheel0.wsjx.render,toptions.muwheel0.wcircle.render);
-/*Composite.create({
-    label: 'Mwheel',
-    parent:engine.world
-});//轮复合体*/
-/*mwheel[1]=Composite.create({
-    label: 'Mwheel',
-    parent:engine.world
-});*/
-//Composite.add(mwheel2,[wsjx2,wcircle2,mcst2])
 
-var acst = [];
-var bcst = [];
-//bcst=bcst.concat(connectAB(mubox0,dpen,{x:-30,y:0},0.4))
+//var bcst = [];
+//bcst=bcst.concat(controlConstraint.connect(mubox0,dpen,{x:-30,y:0},0.4))
 //var wsjx2=Composite.allBodies(mwheel2)[0]
-//bcst=bcst.concat(connectAB(febox0,wsjx2,{x:0,y:20},0.4))
+//bcst=bcst.concat(controlConstraint.connect(febox0,wsjx2,{x:0,y:20},0.4))
 
 //添加所有物品到world里
-//Composite.add(engine.world, [mubox0, febox0, pig0,egg0,we,mwheel2, dpen]);//stack,mwheel
+//Composite.add(engine.world, [mubox0, febox0, pig0,egg0, dpen]);//stack,mwheel,softBody
 Composite.add(engine.world, ground)
-//Composite.add(engine.world, acst.concat(bcst))
+//Composite.add(engine.world, bcst)
 Composite.add(engine.world, bodyss)
 
+/*
+    if (typeof fetch !== 'undefined') {
+        let select = function(root, selector) {
+            return Array.prototype.slice.call(root.querySelectorAll(selector));
+        };
 
-//Composite.add(engine.world,[softBody,spring])
+        let loadSvg = function(url) {
+            return fetch(url)
+                .then(function(response) { return response.text(); })
+                .then(function(raw) { return (new window.DOMParser()).parseFromString(raw, 'image/svg+xml'); });
+        };
+
+        loadSvg('./svg/terrain.svg')
+            .then(function(root) {
+                var paths = select(root, 'path');
+
+                var vertexSets = paths.map(function(path) { return Svg.pathToVertices(path, 30); });
+
+                var terrain = Bodies.fromVertices(400, 350, vertexSets, {
+                    isStatic: true,
+                    render: {
+                        fillStyle: '#060a19',
+                        strokeStyle: '#060a19',
+                        lineWidth: 1
+                    }
+                }, true);
+
+                Composite.add(world, terrain);
+
+                var bodyOptions = {
+                    frictionAir: 0, 
+                    friction: 0.0001,
+                    restitution: 0.6
+                };
+                
+                Composite.add(world, Composites.stack(80, 100, 20, 20, 10, 10, function(x, y) {
+                    if (Query.point([terrain], { x: x, y: y }).length === 0) {
+                        return Bodies.polygon(x, y, 5, 12, bodyOptions);
+                    }
+                }));
+            });
+    } else {
+        Common.warn('Fetch is not available. Could not load SVG.');
+    }
+*/
+
 
 //运行(渲染)renderer
 Render.run(render);
@@ -704,7 +851,7 @@ class Scene {
    
    let changex=render.canvas.offsetWidth/render.options.width;
    let changey=render.canvas.offsetHeight/render.options.height;
-   lookat(-(e.x - this.x)/changex, -(e.y - this.y)/changey, 0);
+   slookat.lookat(-(e.x - this.x)/changex, -(e.y - this.y)/changey, 0);
    this.x=e.x;
    this.y=e.y;
   }
@@ -729,21 +876,21 @@ class Scene {
       this.scale = parseFloat((this.scaleStep + this.scale).toFixed(2)); // 解决小数点运算丢失精度的问题
       if (this.scale > this.maxScale) {
         this.scale = this.maxScale;
-        return;
+        //return;
       }
     } else {
       // 缩小
       this.scale = parseFloat((this.scale - this.scaleStep).toFixed(2)); // 解决小数点运算丢失精度的问题
       if (this.scale < this.minScale) {
         this.scale = this.minScale;
-        return;
+        //return;
       }
     }
   
     this.offset.x = this.mousePosition.x - ((this.mousePosition.x - this.offset.x) * this.scale) / this.preScale;
     this.offset.y = this.mousePosition.y - ((this.mousePosition.y - this.offset.y) * this.scale) / this.preScale;
-    //lookat(this.offset.x,this.offset.y,this.scale)
-    lookat(0,0,-e.wheelDelta/Math.abs(e.wheelDelta)*parseFloat((this.scaleStep).toFixed(2)))
+    //slookat.lookat(this.offset.x,this.offset.y,this.scale)
+    slookat.lookat(0,0,-e.wheelDelta/Math.abs(e.wheelDelta)*parseFloat((this.scaleStep).toFixed(2)))
   
     //this.ctx.translate(this.offset.x, this.offset.y);
     //this.ctx.scale(this.scale, this.scale);
@@ -780,13 +927,13 @@ class Scene {
     let changex=render.canvas.offsetWidth/render.options.width;
     let changey=render.canvas.offsetHeight/render.options.height;
     if(e.targetTouches[1]){
-      lookat(0,0,(Math.sqrt(Math.pow((this.x-this.touchOffset2.x)/changex,2) + Math.pow((this.y-this.touchOffset2.y)/changey,2)) / Math.sqrt(Math.pow((e.targetTouches[0].pageX-e.targetTouches[1].pageX)/changex,2) + Math.pow((e.targetTouches[0].pageY-e.targetTouches[1].pageY)/changey,2))),true);
+      slookat.lookat(0,0,(Math.sqrt(Math.pow((this.x-this.touchOffset2.x)/changex,2) + Math.pow((this.y-this.touchOffset2.y)/changey,2)) / Math.sqrt(Math.pow((e.targetTouches[0].pageX-e.targetTouches[1].pageX)/changex,2) + Math.pow((e.targetTouches[0].pageY-e.targetTouches[1].pageY)/changey,2))),true);
       this.x = e.targetTouches[0].pageX;
       this.y = e.targetTouches[0].pageY;
       this.touchOffset2.x=e.targetTouches[1].pageX;
       this.touchOffset2.y=e.targetTouches[1].pageY;
     }else{
-      lookat(-(e.targetTouches[0].pageX - this.x)/changex, -(e.targetTouches[0].pageY - this.y)/changey, 0);
+      slookat.lookat(-(e.targetTouches[0].pageX - this.x)/changex, -(e.targetTouches[0].pageY - this.y)/changey, 0);
       this.x = e.targetTouches[0].pageX;
       this.y = e.targetTouches[0].pageY;
     }
@@ -819,7 +966,7 @@ class Scene {
     //this.clear();
     //this.ctx.translate(this.offset.x, this.offset.y);
     //this.draw();
-    lookat(this.offset.x, this.offset.y,0)
+    slookat.lookat(this.offset.x, this.offset.y,0)
   }
   
   remember() {
@@ -829,149 +976,325 @@ class Scene {
 
 
 var slookat={
-x: render.options.width/2,
-y: render.options.height/2,
-size:1,
-body:undefined,
-cx:0,
-cy:0
+  x: render.options.width/2,
+  y: render.options.height/2,
+  size:1,
+  body:undefined,
+  cx:0,
+  cy:0,
+  lookat:function(x,y,csize,csizex){
+    if(csizex){
+      if(slookat.size*csize>1&&slookat.size*csize<50){
+        slookat.size*=csize;
+      }else if(slookat.size*csize<1){
+        slookat.size=1
+      }else if(slookat.size*csize>50){
+        slookat.size=50
+      }
+    }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
+      slookat.size+=csize;
+    }
+    let size=slookat.size;
+    if(dgbyid("check").checked){
+      slookat.cx+=x*size;
+      slookat.cy+=y*size;
+    }else{
+      slookat.x+=x*size;
+      slookat.y+=y*size;
+    }
+    Render.lookAt(render, {
+      min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
+      max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
+    });
+    
+    buildgird.move({x:slookat.x,y:slookat.y},true)
+  },
+  followthings:function(){
+    slookat.x=slookat.body.position.x+slookat.cx;
+    slookat.y=slookat.body.position.y+slookat.cy;
+    slookat.lookat(0,0,0)
+  }
 }
 if(localStorage.slookat){
 slookat.x=Number(localStorage.slookat.split(",")[0]);
 slookat.y=Number(localStorage.slookat.split(",")[1]);
-lookat(0,0,0);
+slookat.lookat(0,0,0);
 }
-slookat.body=pig0;
-function lookat(x,y,csize,csizex){
-  if(csizex){
-    if(slookat.size*csize>1&&slookat.size*csize<50){
-      slookat.size*=csize;
-    }else if(slookat.size*csize<1){slookat.size=1}
-    else if(slookat.size*csize>50){slookat.size=50}
-  }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
-    slookat.size+=csize;
+
+
+
+var camera;
+for(let i of Composite.allBodies(engine.world)){
+  if(i.label.name==="pig"){
+    camera = i;
+    //break;
   }
-  let size=slookat.size;
-  if(dgbyid("check").checked){
-  slookat.cx+=x*size;
-  slookat.cy+=y*size;
-  }else{
-  slookat.x+=x*size;
-  slookat.y+=y*size;
+  else if(i.label.name==="TNT"){
+    //buttoncontrol.test()
+    //break
   }
-  Render.lookAt(render, {
-    min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
-    max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
-  });
+  switch(i.label.name){
+    case "pig":
+    break;
+    case "TNT":
+    break;
+    case "pig":
+    break;
+    case "pig":
+    break;
+  }
 }
-function followthings(){
-slookat.x=slookat.body.position.x+slookat.cx;
-slookat.y=slookat.body.position.y+slookat.cy;
-lookat(0,0,0)
-}
+slookat.body=camera;
+
+var lastspeed=0;
 Events.on(runner, "beforeUpdate", function(){
-  if(dgbyid("check").checked){followthings()}
-  let ctx=render.canvas.getContext("2d");
-  ctx.font="25px Arial";
-  ctx.textAlign="start";
+
+  if(dgbyid("check").checked){slookat.followthings()}
+  
+  let ctx=render.context;
+  let fontsize=20;
+  Object.assign(ctx,{
+    font:fontsize+"px Arial",
+    textAlign:"start",
+    fillStyle:"#838CAC"
+  });
   let filltexts=[
-    "雀斑猪速度: "+Math.round(pig0.speed*10)/10,
-    "雀斑猪位置: ("+Math.round(pig0.position.x/100)+","+Math.round(pig0.position.y/100)+")",
-    "雀斑猪角度: "+Math.round(pig0.angle/Math.PI*180*10)/10,
-    "雀斑猪角速度: "+Math.round(pig0.angularSpeed*10)/10,
+    "雀斑猪属性: ",
+    "  速度: "+Math.round(camera.speed*10)/10,
+    "  加速度: "+Math.round(getacceleration(camera.speed)*10)/10,
+    "  位置: ("+Math.round(camera.position.x/100)+","+Math.round(camera.position.y/100)+")",
+    "  角度: "+Math.round(camera.angle/Math.PI*180*10)/10,
+    "  角速度: "+Math.round(camera.angularSpeed*10)/10,
     "视野大小: "+Math.round(slookat.size*5*100)/100,
     "视野位置: ("+Math.round(slookat.x/100)+","+Math.round(slookat.y/100)+")",
+    "运行时间: "+Math.round(engine.timing.timestamp)
   ];
-  for(var i=0;i<filltexts.length;i++){
-    ctx.fillText(filltexts[i], 50, i*25+125);
+  for(let i in filltexts){
+    ctx.fillText(filltexts[i], 50, i*fontsize+125);
   }
+  
+  let speed2=camera.speed;
+  setTimeout(function(){
+    lastspeed=speed2;
+  },1000)
+  function getacceleration(speed){
+    return speed-lastspeed;
+  }
+  
+  for(let i of Composite.allConstraints(engine.world)){
+    let pointA=Constraint.pointAWorld(i);
+    let pointB=Constraint.pointBWorld(i);
+    let distance=Math.sqrt(Math.pow(Math.abs(pointB.x - pointA.x),2)+Math.pow(Math.abs(pointB.y - pointA.y),2));
+    if(Math.abs(i.length-distance)>7){Composite.remove(engine.world, i);}
+  }
+  
 });
+
+var collisiontime=[];
+Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+    //event{pairs name source}
+
+    for (let i of pairs) {
+        var pair = i;
+        if(pair.bodyA.id==35||pair.bodyB.id==35)
+        {
+        for (var ii = 0; ii < Object.keys(event.source.timing).length; ii++) {
+        //logs(Object.keys(event.source.timing)[ii]+":"+Object.values(event.source.timing)[ii])
+        }
+        //logs(pair.bodyA.speed*pair.bodyA.mass/0.01);
+        //logs(pair.bodyA.speed)
+        //logs(pair.bodyA.mass)
+        }
+        //fs=mv f=mv/s
+    }
+    collisiontime.push(engine.timing.timestamp)
+});
+Events.on(engine, 'collisionEnd', function(event) {
+    var pairs = event.pairs;
+
+    for (let i of pairs) {
+        ///
+    }
+});
+
+//var mouse = Mouse.create(render.canvas);
+render.canvas.onclick=function(e){
+  //logs(e.offsetX+"/"+e.offsetY)
+  let clickpoint=clickworld({x:e.offsetX, y:e.offsetY})
+  logs(clickpoint.x)
+  //{x:e.offsetX,y:e.offsetY}
+  controlbody.explode({x:clickpoint.x/lattice,y:clickpoint.y/lattice},200,0.4)
+  let clickbody=Query.point(Composite.allBodies(engine.world), clickpoint)
+  for(let i of clickbody){
+    logs(i.id)
+    if(i.label.name==="TNT"){
+    //clickbody[i].explode()
+    controlbody.explode({x:i.position.x/lattice,y:i.position.y/lattice},i.erange,i.eforce,i)
+    }else if(i.label.name==="gird"){
+      
+    }
+  }
+  function clickworld(point){
+    return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width*slookat.size,
+    y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width*slookat.size }
+  }
+}
 render.canvas.ondblclick=function(){
   dgbyid("check").checked=(!dgbyid("check").checked);
   slookat.cx=0;
   slookat.cy=0;
 }
 
-function boom(){
-Events.on(engine, 'collisionStart', function(event) {
-    var pairs = event.pairs;
-    
-    for (var i = 0, j = pairs.length; i != j; ++i) {
-        var pair = pairs[i];
-
-        if (pair.bodyA === bodyss[0]) {
-            //pair.bodyB.render.strokeStyle = colorA;
-            //Body.applyForce( pair.bodyB, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
-            Body.applyForce( pair.bodyB, {x: pair.bodyA.position.x, y: pair.bodyA.position.y}, {x: pair.bodyA.position.x, y: pair.bodyA.position.y});
-        } else if (pair.bodyB === bodyss[0]) {
-            //pair.bodyA.render.strokeStyle = colorA;
-        }
+//collides: pair,collided,bodyA,bodyB,parentA,parentB,depth,normal,tangent,penetration,supports
+var controlbody={
+  explode:function(point,radius,force,removebody){
+    radius=radius||200;
+    if(removebody){
+      Composite.remove(engine.world,removebody);
     }
-});
+    let explodeball=Bodies.circle(point.x*lattice, point.y*lattice, radius, {
+      render:{
+        visible:true,
+        sprite: {
+          texture: "https://s1.imagehub.cc/images/2023/05/03/Particles_Sheet_01.png",
+          cutx: 0,
+          cuty: 260,
+          cutwidth: 260,
+          cutheight: 260,
+          xScale: radius*2/1000,
+          yScale: radius*2/1000
+        }
+      },
+      isSensor:true,
+      isStatic:true
+    });
+    Composite.add(engine.world,[explodeball])
+    setTimeout(function(){
+        Composite.remove(engine.world,[explodeball])
+    },150)
+    for(let i of Query.collides(explodeball, Composite.allBodies(engine.world))){
+      if(i.bodyA.id!==explodeball.id&&i.bodyA.isStatic===true){continue}
+      if(i.bodyA.label.name==="TNT"){
+        controlbody.explode({x:i.bodyA.position.x/lattice,y:i.bodyA.position.y/lattice},i.bodyA.label.erange,i.bodyA.label.eforce,i.bodyA)
+      }
+      let v={x:i.bodyA.position.x-explodeball.position.x,y:i.bodyA.position.y-explodeball.position.y}
+      v.d=Math.sqrt(v.x**2+v.y**2);
+      v.m=(radius-v.d)/radius*force
+      if(v.d>radius){continue}
+      v.n=v.x>0?Math.atan2(v.y,v.x):-Math.atan2(v.y,v.x);
+      Body.applyForce( i.bodyA, i.bodyA.position, {x:v.m*Math.cos(v.n), y:v.m*Math.sin(v.n)});
+    }
+  },
+  addforce:function(thebody,m){
+    let n=thebody.angle;
+    Body.applyForce( thebody, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
+},
+  addvelocity:function(thebody,m){
+    let n=thebody.angle;
+    Body.setVelocity( thebody, {x:m*Math.cos(n), y:m*Math.sin(n)});
+  }
 }
 
-
-
-
-dgbyid("bu1").addEventListener('click', function () {
+//controlbody.explode({x:3,y:0},200,1)
+var buttoncontrol={
+  num:0,
+  test:function(name,does){
+    let button=document.createElement("BUTTON");
+    button.className="bu";
+    button.addEventListener('click',does);
+    button.innerHTML=(name||"bu")+this.num++
+    dqsa(".bu")[0].insertBefore(button, dqsa("#fullscreen")[0]);
+  }
+}
+buttoncontrol.test(undefined, function () {
     //Body.scale( mubox0, 1.5, 1.2);//放大
-    //doing()
     //Composite.move(mwheel,wsjx,engine.world)
-    //Composite.remove(mwheel,mcst)
     //Matter.Body.setStatic(body, true)
-    //myVar=nwnw
-    //lookat(0,0,0.1)
 });
-dgbyid("bu2").addEventListener('click', function () {//旋转
+buttoncontrol.test(undefined, function () {//旋转
     Body.rotate( pig0, Math.PI/180*45);
 });
-dgbyid("bu3").addEventListener('click', function () {//移动
-    Body.translate( mubox0, {x: 40, y: -20});
+buttoncontrol.test(undefined, function () {//移动
+    //Body.translate( mubox0, {x: 40, y: -20});
+    logs(Query.collides(Composite.allBodies(engine.world)[3], Composite.allBodies(engine.world))[0].bodyA.id+"+"+Query.collides(Composite.allBodies(engine.world)[3], Composite.allBodies(engine.world))[0].bodyB.id)
 });
-dgbyid("bu4").addEventListener('click', function () {//移动速度
+buttoncontrol.test(undefined, function () {//移动速度
     Body.setVelocity( mubox0, {x: 00, y: -20});
     Body.setVelocity( febox0, {x: 00, y: 20});
     Body.setVelocity( pig0, {x: 10, y: -10});
 });
-dgbyid("bu5").addEventListener('click', function () {//旋转速度
+buttoncontrol.test(undefined, function () {//旋转速度
     Body.setAngularVelocity( Composite.allBodies(wheel)[1], Math.PI/180*40);
     //Body.setAngularVelocity( mubox0, Math.PI/6);
 });
-dgbyid("bu6").addEventListener('click', function () {//施加力向右
-    //addforce(dpen,0.44);
-    addvelocity(dpen,100);
+buttoncontrol.test(undefined, function () {//施加力向右
+    //controlbody.addforce(dpen,0.44);
+    /*let tick=0;
+    let timeout=function(){
+      tick++;
+      controlbody.addforce(dpen,0.08);
+      if(tick<16){
+          setTimeout(timeout,150);
+      }
+    }
+    timeout()*/
+    let timeout=new Loop(function(){
+      controlbody.addforce(dpen,0.08);
+    },150)
+    timeout.start(15)
+    //controlbody.addforce(dpen,0.44);
     //Body.applyForce( obja, {x: obja.position.x, y: obja.position.y}, {x: 0.44, y: 0});
 });
-dgbyid("bu7").addEventListener('click', function () {//向上力
-    addforce(pig0,-0.44);
+buttoncontrol.test(undefined, function () {//向上力
+    controlbody.addforce(pig0,-0.44);
 });
-dgbyid("bu8").addEventListener('click', function () {//摩擦
-  pig0.friction = 0.05;
-  pig0.frictionAir = 0.0005;
-  pig0.restitution = 0.9;
+buttoncontrol.test(undefined, function () {//摩擦
+  Object.assign(pig0,{
+    friction:0.05,
+    frictionAir:0.0005,
+    restitution:0.9
+  })
 });
-dgbyid("bu9").addEventListener('click', function () {//摩擦
-  pig0.friction = 0.1;
-  pig0.frictionAir = 0.001;
-  pig0.restitution = 0;
-});
-function addforce(thebody,m){
-    let n=thebody.angle;
-    Body.applyForce( thebody, {x: thebody.position.x, y: thebody.position.y}, {x:m*Math.cos(n), y:m*Math.sin(n)});
-}
-function addvelocity(thebody,m){
-  try{let n=thebody.angle;Body.setVelocity( thebody, {x:m*Math.cos(n), y:m*Math.sin(n)});}catch(e){logs(e)}
-}
+buttoncontrol.test(undefined, function () {//暂停
 
+  if(runner.enabled){
+    Runner.stop(runner);
+    runner.enabled=false;
+  }else{logs(899)
+    Runner.run(runner, engine);
+  }
+});
+
+function dqsa(qsqs){return document.querySelectorAll(qsqs);}
 function logs(e){
 dgbyid("log").innerHTML+=e+", ";
 }
 
-function doing(){
-//Body.rotate( pig0, Math.PI/2);
-setTimeout('doing()',100)
-}
 
+
+class Loop{
+  constructor(event,interval){
+    this.tick=0;
+    this.times=undefined;
+    this.event=function(){
+      event();
+      if(++this.tick===this.times){this.stop();this.times=undefined;}
+    };
+    this.event=this.event.bind(this)
+    this.interval=interval;
+    this.run=undefined;
+  }
+  start(times){
+    this.run=setInterval(this.event,this.interval)
+    if(times){
+      this.times=times;
+    }
+  }
+  stop(){
+    clearInterval(this.run)
+  }
+}
 </script>
 
 </body>
