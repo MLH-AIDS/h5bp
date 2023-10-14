@@ -1,0 +1,355 @@
+<!DOCTAPE html>
+<html>
+<head>
+<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<style>
+body{
+margin:0;
+padding:0;
+}
+</style>
+<title>eating(matter.js) 1.0</title>
+<!--link rel="stylesheet" href="style.css"-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
+</head>
+<body>
+<!--html-->
+<noscript>noscript</noscript>
+
+<canvas id="canvas" width="1200" height="675" style="width:100vw;">你的浏览器不支持canvas</canvas>
+
+
+<!-- <div id="j" style="float:right;width:20;height:20;background:#ccc;"></div> -->
+<!-- <div id="k" style="float:right;width:20;height:20;background:#c0c;"></div> -->
+<!-- <div id="l" style="float:right;width:20;height:20;background:#c0c;"></div> -->
+<div id="jr" style="width:100;height:100;background:#ccc;"></div>
+
+<!-- <script src="matter.js"></script> -->
+<script src="matter.min.js"></script>
+<!--script src="matter-spring.js"></script-->
+<!-- <script src="tool.js"></script> -->
+<script>
+function dgbyid(idid){
+return document.getElementById(idid)
+}
+
+function at(n) {
+    // ToInteger() abstract op
+    n = Math.trunc(n) || 0;
+    // Allow negative indexing from the end
+    if (n < 0) n += this.length;
+    // OOB access is guaranteed to return undefined
+    if (n < 0 || n >= this.length) return undefined;
+    // Otherwise, this is just normal property access
+    return this[n];
+}
+const TypedArray = Reflect.getPrototypeOf(Int8Array);
+for (const C of [Array, String, TypedArray]) {
+    Object.defineProperty(C.prototype, "at",
+        {
+            value: at,
+            writable: true,
+            enumerable: false,
+            configurable: true
+        });
+}
+
+
+//matter0.19
+// module模块 aliases
+var Engine = Matter.Engine,
+    Render = Matter.Render,
+    Runner = Matter.Runner,
+    Bodies = Matter.Bodies,
+    Constraint = Matter.Constraint,//约束
+    Composite = Matter.Composite,
+    Composites = Matter.Composites,
+    Body = Matter.Body,
+    MouseConstraint = Matter.MouseConstraint,
+    Mouse = Matter.Mouse,
+    Query = Matter.Query,
+    Events = Matter.Events,
+    Example = Matter.Example,
+    Vector = Matter.Vector;
+    
+//Matter.use('matter-springs');//弹簧插件
+
+// create an engine
+var engine = Engine.create({
+  gravity:{x:0,y:0},
+  timing:{timeScale:1}
+});
+
+// create a renderer
+var render = Render.create({
+    canvas: dgbyid("canvas"),
+    //element: document.body,
+    engine: engine,
+    options: {
+        width: 1200,
+        height: 675,
+        background:"#eee",
+        hasBounds:true,
+        //showAngleIndicator: true,
+        showPerformance: true,
+        showDebug:true,
+        showIds: true,
+        //showSeparations: true,
+        //showVelocity: true,
+         wireframes: false//线框模式
+    }
+});
+
+//...
+
+
+</script>
+<script>
+
+var hero=Bodies.rectangle(100, 100, 24, 24, {
+  render:{
+    fillStyle:"#333333",
+    opacity:1
+  },
+  label:"hero",
+  airFriction:0.85
+}),
+    reds=Composite.create({label:"red"}),
+    pinks=Composite.create({label:"red"});
+
+Composite.add(engine.world,[hero])
+var walls=[
+  Bodies.rectangle(render.options.width/2, 0, render.options.width, 30, {label:"wall",isStatic:true}),
+  Bodies.rectangle(render.options.width/2, render.options.height, render.options.width, 30, {label:"wall",isStatic:true}),
+  Bodies.rectangle(0, render.options.height/2, 30, render.options.height, {label:"wall",isStatic:true}),
+  Bodies.rectangle(render.options.width, render.options.height/2, 30, render.options.height, {label:"wall",isStatic:true})
+]
+Composite.add(engine.world,walls)
+
+function red(){
+  let x=Math.floor(Math.random() * render.options.width-200)+100;
+  let y=Math.floor(Math.random() * render.options.height-200)+100;
+  let body=Bodies.rectangle(x, y, 30, 30, {
+    render:{
+      fillStyle:"#ff0000",
+      opacity:1
+    },
+    label:"red"
+  })
+  Composite.add(reds,[body])
+  Composite.add(engine.world,[body])
+}
+function pink(){
+  let red=Composite.allBodies(reds)[Math.floor(Math.random() * Composite.allBodies(reds).length)];
+  red.label="pink";
+  red.render.fillStyle="#ff00ff";
+  Composite.move(reds,[red],pinks)
+}
+
+var score={
+  n:0, l:0,
+  a(){
+    score.n++
+    if(score.n>score.l){score.l=score.n}
+    localStorage.scoren=score.n;
+    localStorage.scorel=score.l;
+  },
+  s(){
+    if(hero.render.opacity===1){
+      score.n--;
+      localStorage.scoren=score.n;
+      Body.setPosition(hero,{x:100,y:100})
+      hero.render.opacity=0.5;
+      setTimeout(function(){hero.render.opacity=1;},3000);
+    }
+  }
+};
+
+if (localStorage.scoren) {
+    score.n = Number(localStorage.scoren);
+}
+if (localStorage.scorel) {
+    score.l = Number(localStorage.scorel);
+}
+
+
+Events.on(engine, 'collisionStart', function(event) {
+    var pairs = event.pairs;
+
+    for (let i of pairs) {
+        if(i.bodyA.label==="hero"&&i.bodyB.label==="red"){
+          Composite.remove(engine.world,i.bodyB);
+          score.a();
+        }else if(i.bodyA.label==="hero"&&i.bodyB.label==="pink"){
+          score.s();
+        }else if(i.bodyA.label==="wall"&&i.bodyB.label==="pink"){
+          score.a();
+          Composite.remove(engine.world,i.bodyB)
+        }else if(i.bodyA.label==="hero"&&i.bodyB.label==="shoot"){
+        
+        }
+    }
+});
+
+//运行(渲染)renderer
+Render.run(render);
+//创建runner
+var runner = Runner.create();
+//运行engine
+Runner.run(runner, engine);
+
+//Engine.run(engine);
+//Render.run(render);
+
+setInterval(function(){
+
+  if(Composite.allBodies(reds).length<11){
+    red();
+  }else{
+    pink();
+  }
+
+},1700)
+
+setInterval(function(){
+
+  let pms=7;//每次移动距离（500ms7px）
+  for(let i of Composite.allBodies(pinks)){
+    let p=Vector.sub(hero.position,i.position)
+    Body.setVelocity(i,Vector.mult(p,1/Math.sqrt(p.x**2+p.y**2)))
+  }
+
+},500)
+
+Events.on(runner, "beforeUpdate", function(){
+  
+  let ctx=render.context;
+  let fontsize=20;
+  Object.assign(ctx,{
+    font:fontsize+"px Arial",
+    textAlign:"start",
+    fillStyle:"#000"
+  });
+  let filltexts=[
+    "当前得分: "+score.n,
+    "累计得分: "+score.l
+  ];
+  for(let i in filltexts){
+    ctx.fillText(filltexts[i], 50, i*fontsize+525);
+  }
+  
+  if(heromove.ismove){
+    Body.setVelocity(hero, heromove)
+  }
+  
+});
+
+window.onkeydown = function (event) {//按键
+    event = event || window.event;//浏览器兼容
+    if (event.keyCode == 87) {//W
+        heromove.y=-1.75
+        heromove.ismove=true
+    }
+    if (event.keyCode == 65) {//a
+        heromove.x=-1.75
+        heromove.ismove=true
+    }
+    if (event.keyCode == 83) {//s
+        heromove.x=1.75
+        heromove.ismove=true
+    }
+    if (event.keyCode == 68) {//D
+        heromove.y=1.75
+        heromove.ismove=true
+    }
+    if (event.keyCode == 74) {//J
+        odg();
+    }
+};
+window.onkeyup = function (event) {//按键
+    event = event || window.event;//浏览器兼容
+    if (event.keyCode == 87) {//W
+        heromove.y=0
+        heromove.ismove=false
+    }
+    if (event.keyCode == 65) {//a
+        heromove.x=0
+        heromove.ismove=false
+    }
+    if (event.keyCode == 83) {//s
+        heromove.x=0
+        heromove.ismove=false
+    }
+    if (event.keyCode == 68) {//D
+        heromove.y=0
+        heromove.ismove=false
+    }
+};
+
+var heromove={
+  x:0,
+  y:0,
+  ismove:false,
+  begin:function(event){
+    let speed=1.75;
+    heromove.x=(event.targetTouches[0].pageX-jr.offsetLeft-jr.offsetWidth/2)/jr.offsetWidth*2*speed
+    heromove.y=(event.targetTouches[0].pageY-jr.offsetTop-jr.offsetHeight/2)/jr.offsetHeight*2*speed
+    if(heromove.x>speed){heromove.x=speed}
+    if(heromove.x<-speed){heromove.x=-speed}
+    if(heromove.y>speed){heromove.y=speed}
+    if(heromove.y<-speed){heromove.y=-speed}
+    heromove.ismove=true
+  }
+}
+jr.addEventListener("touchstart",heromove.begin)
+jr.addEventListener("touchmove",heromove.begin)
+jr.addEventListener("touchend",function(event){
+  heromove.x=0;
+  heromove.y=0;
+  heromove.ismove=false
+})
+
+dgbyid("j").onclick=function(){
+  if(score.n>=10){
+    
+  }
+}
+
+
+
+
+
+
+function dqsa(qsqs){return document.querySelectorAll(qsqs);}
+function logs(e){
+dgbyid("log").innerHTML+=e+", ";
+}
+
+
+
+class Loop{
+  constructor(event,interval){
+    this.tick=0;
+    this.times=undefined;
+    this.event=function(){
+      event();
+      if(++this.tick===this.times){this.stop();this.times=undefined;}
+    };
+    this.event=this.event.bind(this)
+    this.interval=interval;
+    this.run=undefined;
+  }
+  start(times){
+    this.run=setInterval(this.event,this.interval)
+    if(times){
+      this.times=times;
+    }
+  }
+  stop(){
+    clearInterval(this.run)
+  }
+}
+</script>
+
+</body>
+</html>
