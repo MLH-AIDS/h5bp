@@ -8,7 +8,7 @@ margin:0;
 padding:0;
 }
 </style>
-<title>eating(matter.js) 1.0</title>
+<title>eating(matter.js) 1.1</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -19,10 +19,16 @@ padding:0;
 <canvas id="canvas" width="1200" height="675" style="width:100vw;">你的浏览器不支持canvas</canvas>
 
 
-<!-- <div id="j" style="float:right;width:20;height:20;background:#ccc;"></div> -->
-<!-- <div id="k" style="float:right;width:20;height:20;background:#c0c;"></div> -->
-<!-- <div id="l" style="float:right;width:20;height:20;background:#c0c;"></div> -->
-<div id="jr" style="margin:10;width:100;height:100;background:#ccc;"></div>
+<div style="float:right;">
+<div id="j" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
+<div id="k" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
+<div id="l" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
+</div>
+<div id="jr" style="margin:10;width:100;height:100;background:#ccc;">
+  <div id="jrc" style="position:relative;width:20;height:20;background:#ddd"></div>
+</div>
+
+<div id="log"></div>
 
 <!-- <script src="matter.js"></script> -->
 <script src="matter.min.js"></script>
@@ -55,8 +61,9 @@ for (const C of [Array, String, TypedArray]) {
 }
 
 
-//matter0.19
+//matter.js 0.19.0
 // module模块 aliases
+
 var Engine = Matter.Engine,
     Render = Matter.Render,
     Runner = Matter.Runner,
@@ -107,17 +114,28 @@ var render = Render.create({
 <script>
 
 var hero=Bodies.rectangle(100, 100, 24, 24, {
-  render:{
-    fillStyle:"#333333",
-    opacity:1
-  },
-  label:"hero",
-  airFriction:0.85
-}),
+      render:{
+        fillStyle:"#333333",
+        opacity:1
+      },
+      collisionFilter:{group: Body.nextGroup(true)},
+      label:"hero",
+      airFriction:0.85
+    }),
+    shockwave=Bodies.circle(100,100,24,{
+      render:{
+        fillStyle:"#333333",
+        opacity:0.5
+      },
+      isSensor:true,
+      collisionFilter:{group: hero.collisionFilter.group},
+      label:"shockwave"
+    })
     reds=Composite.create({label:"red"}),
-    pinks=Composite.create({label:"red"});
+    pinks=Composite.create({label:"pink"}),
+    blues=Composite.create({label:"blue"}),
+Composite.add(engine.world,[hero,shockwave])
 
-Composite.add(engine.world,[hero])
 var walls=[
   Bodies.rectangle(render.options.width/2, 0, render.options.width, 30, {label:"wall",isStatic:true}),
   Bodies.rectangle(render.options.width/2, render.options.height, render.options.width, 30, {label:"wall",isStatic:true}),
@@ -145,14 +163,29 @@ function pink(){
   red.render.fillStyle="#ff00ff";
   Composite.move(reds,[red],pinks)
 }
+function blue(){
+  let pink=Composite.allBodies(pinks)[Math.floor(Math.random() * Composite.allBodies(pinks).length)];
+  pink.label="blue";
+  pink.render.fillStyle="#0000ff";
+  pink.collisionFilter.group=Body.nextGroup(true)
+  Composite.move(pinks,[pink],blues)
+  logs(1)
+}
 
 var score={
   n:0, l:0,
+  skill:{
+    j:10,k:30,l:10000,
+    buj:dgbyid("j"),
+    buk:dgbyid("k"),
+    bul:dgbyid("l")
+  },
   a(){
     score.n++
     if(score.n>score.l){score.l=score.n}
     localStorage.scoren=score.n;
     localStorage.scorel=score.l;
+    score.t()
   },
   s(){
     if(hero.render.opacity===1){
@@ -161,10 +194,33 @@ var score={
       Body.setPosition(hero,{x:100,y:100})
       hero.render.opacity=0.5;
       setTimeout(function(){hero.render.opacity=1;},3000);
+      score.t()
+    }
+  },t(){
+    if(score.n<score.skill.j){
+      dgbyid("j").style.background="#999";
+      dgbyid("j").dataset.cooling=1
+    }else{
+      dgbyid("j").style.background="#ccc";
+      dgbyid("j").dataset.cooling=0
+    }
+    if(score.n<score.skill.k){
+      dgbyid("k").style.background="#999"
+      dgbyid("k").dataset.cooling=1
+    }else{
+      dgbyid("k").style.background="#ccc"
+      dgbyid("k").dataset.cooling=0
+    }
+    if(score.n<score.skill.l){
+      dgbyid("l").style.background="#999"
+      dgbyid("l").dataset.cooling=1
+    }else{
+      dgbyid("l").style.background="#ccc"
+      dgbyid("l").dataset.cooling=0
     }
   }
 };
-
+setTimeout("score.t()",1000)
 if (localStorage.scoren) {
     score.n = Number(localStorage.scoren);
 }
@@ -178,16 +234,68 @@ Events.on(engine, 'collisionStart', function(event) {
 
     for (let i of pairs) {
         if(i.bodyA.label==="hero"&&i.bodyB.label==="red"){
+          Composite.remove(reds,i.bodyB);
           Composite.remove(engine.world,i.bodyB);
           score.a();
         }else if(i.bodyA.label==="hero"&&i.bodyB.label==="pink"){
           score.s();
         }else if(i.bodyA.label==="wall"&&i.bodyB.label==="pink"){
           score.a();
+          Composite.remove(pinks,i.bodyB);
           Composite.remove(engine.world,i.bodyB)
         }else if(i.bodyA.label==="hero"&&i.bodyB.label==="shoot"){
-        
+          score.s();
+          shootvector.splice(shootvector.indexOf(i.bodyB),2);
+          Composite.remove(engine.world,i.bodyB)
+        }else if(i.bodyA.label==="wall"&&i.bodyB.label==="shoot"){
+          shootvector.splice(shootvector.indexOf(i.bodyB),2);
+          Composite.remove(engine.world,i.bodyB)
+        }else if(i.bodyA.label==="hero"&&i.bodyB.label==="blue"){
+          score.a();
+          Composite.remove(blues,i.bodyB);
+          Composite.remove(engine.world,i.bodyB)
+        }else if(pairla(i,"mine","pink")||pairla(i,"mine","red")||pairla(i,"mine","blue")){
+          removebody(i.bodyA)
+          removebody(i.bodyB)
+          score.a()
         }
+    }
+    function pairla(pair,labelA,labelB){
+      if((pair.bodyA.label===labelA&&pair.bodyB.label===labelB)||(pair.bodyA.label===labelB&&pair.bodyB.label===labelA)){
+        return true
+      }else{
+        return false
+      }
+    }
+    function removered(body){
+      Composite.remove(reds,body);
+      Composite.remove(engine.world,body);
+    }
+    function removepink(body){
+      Composite.remove(pinks,body);
+      Composite.remove(engine.world,body);
+    }
+    function removeblue(body){
+      Composite.remove(blues,body);
+      Composite.remove(engine.world,body);
+    }
+    function removebody(body){
+      switch (body.label){
+        case "red":
+        Composite.remove(reds,body);
+        break;
+        case "pink":
+        Composite.remove(pinks,body);
+        break;
+        case "blue":
+        Composite.remove(blues,body);
+        break;
+        case "mine":
+        break;
+        case "shoot":
+        shootvector.splice(shootvector.indexOf(body),2);
+      }
+      Composite.remove(engine.world,body);
     }
 });
 
@@ -203,23 +311,53 @@ Runner.run(runner, engine);
 
 setInterval(function(){
 
-  if(Composite.allBodies(reds).length<11){
+  i=11
+  if(score.n>10){i=6}
+  if(score.n>20){i=3}
+  if(Composite.allBodies(reds).length<i){
     red();
-  }else{
+  }else if(Composite.allBodies(pinks).length<11){
     pink();
+    if(Composite.allBodies(pinks).length>3&&Composite.allBodies(blues).length===0&&score.n>20&&Math.floor(Math.random() * 3)===1){
+      blue();
+    }
   }
+  
 
 },1700)
 
 setInterval(function(){
 
-  let pms=7;//每次移动距离（500ms7px）
+  let sp=1;//移动速度
   for(let i of Composite.allBodies(pinks)){
     let p=Vector.sub(hero.position,i.position)
-    Body.setVelocity(i,Vector.mult(p,1/Math.sqrt(p.x**2+p.y**2)))
+    Body.setVelocity(i,Vector.mult(p,sp/Math.sqrt(p.x**2+p.y**2)))
   }
 
 },500)
+
+var shootvector=[];
+setInterval(function(){
+
+  let sp=2;//
+  for(let i of Composite.allBodies(blues)){
+    let shoot=Bodies.circle(i.position.x,i.position.y,10,{
+      render:{fillStyle:"#0000ff"},
+      collisionFilter:{group: i.collisionFilter.group},
+      label:"shoot"
+    });
+    logs(i.collisionFilter.group)
+    let p=Vector.sub(hero.position,shoot.position);
+    Composite.add(engine.world,shoot);
+    shootvector.push(shoot);
+    shootvector.push(Vector.mult(p,sp/Math.sqrt(p.x**2+p.y**2)));
+  }
+  for(let i=0;i<shootvector.length;i=i+2){
+    Body.setVelocity(shootvector[i],shootvector[i+1])
+  }
+  
+
+},1500)
 
 Events.on(runner, "beforeUpdate", function(){
   
@@ -242,24 +380,45 @@ Events.on(runner, "beforeUpdate", function(){
     Body.setVelocity(hero, heromove)
   }
   
+  if(Composite.allBodies(engine.world).indexOf(shockwave)!==-1){
+    if(shockwave.area<3.14*24**2*10){
+      Body.scale(shockwave,1.2,1.2)
+      Body.setPosition(shockwave,hero.position)
+      shockwave.render.opacity-=0.2
+    }else{
+      for(let i of Query.collides(shockwave, Composite.allBodies(engine.world))){
+        if(i.bodyB.label==="hero" || i.bodyB.label==="shockwave" || i.bodyB.isStatic===true){continue}
+        let p=Vector.sub(i.bodyB.position,i.bodyA.position)
+        Body.applyForce( i.bodyB, i.bodyB.position, Vector.mult(p,0.1/Math.sqrt(p.x**2+p.y**2)));
+        logs(i.bodyB.id===shockwave.id)
+        /*let v=Vector.sub(i.bodyB.position,shockwave.position)
+        v.m=0.15
+        v.n=v.x>0?Math.atan2(v.y,v.x):-Math.atan2(v.y,v.x);
+        Body.applyForce( i.bodyB, i.bodyB.position, {x:v.m*Math.cos(v.n), y:v.m*Math.sin(v.n)});*/
+      }
+      Composite.remove(engine.world,[shockwave])
+    }
+  }
+  
 });
 
 window.onkeydown = function (event) {//按键
     event = event || window.event;//浏览器兼容
+    let speed=1.75
     if (event.keyCode == 87) {//W
-        heromove.y=-1.75
+        heromove.y=-speed
         heromove.ismove=true
     }
     if (event.keyCode == 65) {//a
-        heromove.x=-1.75
+        heromove.x=-speed
         heromove.ismove=true
     }
     if (event.keyCode == 83) {//s
-        heromove.x=1.75
+        heromove.x=speed
         heromove.ismove=true
     }
     if (event.keyCode == 68) {//D
-        heromove.y=1.75
+        heromove.y=speed
         heromove.ismove=true
     }
     if (event.keyCode == 74) {//J
@@ -292,30 +451,82 @@ var heromove={
   ismove:false,
   begin:function(event){
     let speed=1.75;
-    heromove.x=(event.targetTouches[0].pageX-jr.offsetLeft-jr.offsetWidth/2)/jr.offsetWidth*2*speed
-    heromove.y=(event.targetTouches[0].pageY-jr.offsetTop-jr.offsetHeight/2)/jr.offsetHeight*2*speed
-    if(heromove.x>speed){heromove.x=speed}
-    if(heromove.x<-speed){heromove.x=-speed}
-    if(heromove.y>speed){heromove.y=speed}
-    if(heromove.y<-speed){heromove.y=-speed}
+    heromove.x=(event.targetTouches[0].pageX-jr.offsetLeft-jr.offsetWidth/2)/jr.offsetWidth*2
+    heromove.y=(event.targetTouches[0].pageY-jr.offsetTop-jr.offsetHeight/2)/jr.offsetHeight*2
+    if(heromove.x>1){heromove.x=1}
+    if(heromove.x<-1){heromove.x=-1}
+    if(heromove.y>1){heromove.y=1}
+    if(heromove.y<-1){heromove.y=-1}
+    dgbyid("jrc").style.left=heromove.jrcbase.x*(1+heromove.x)
+    dgbyid("jrc").style.top=heromove.jrcbase.y*(1+heromove.y)
+    Object.assign(heromove,Vector.mult(heromove,speed))
     heromove.ismove=true
+  },
+  end:function(event){
+    heromove.x=0;
+    heromove.y=0;
+    dgbyid("jrc").style.left=heromove.jrcbase.x
+    dgbyid("jrc").style.top=heromove.jrcbase.y
+    heromove.ismove=false;
+  },
+  jrcbase:{
+    x:dgbyid("jr").offsetWidth/2-dgbyid("jrc").offsetWidth/2,
+    y:dgbyid("jr").offsetHeight/2-dgbyid("jrc").offsetHeight/2
   }
 }
+heromove.end()
 jr.addEventListener("touchstart",heromove.begin)
 jr.addEventListener("touchmove",heromove.begin)
-jr.addEventListener("touchend",function(event){
-  heromove.x=0;
-  heromove.y=0;
-  heromove.ismove=false
-})
+jr.addEventListener("touchend",heromove.end)
+
 
 dgbyid("j").onclick=function(){
-  if(score.n>=10){
+  let button=score.skill.buj;
+  if(button.dataset.cooling==0){
+    button.style.background="#999";
+    button.dataset.cooling=1
+    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},7000)
+    
+    Body.setPosition(shockwave,hero.position)
+    Body.scale(shockwave,0.1,0.1)
+    shockwave.render.opacity=0.5
+    Composite.add(engine.world,[shockwave])
+  }
+}
+dgbyid("k").onclick=function(){
+  let button=score.skill.buk;
+  if(button.dataset.cooling==0){
+    button.style.background="#999";
+    button.dataset.cooling=1
+    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},7000)
+    
+    let mines=[];
+    for(let i=0;i<3;i++){
+    mines.push(Bodies.polygon(hero.position.x,hero.position.y,3,12,{
+        render:{
+          fillStyle:"#333333",
+        },
+        collisionFilter:{group: hero.collisionFilter.group},
+        label:"mine",
+        airFriction:1
+    }))
+    }
+    Composite.add(engine.world,mines)
+    let m=0.001, n=hero.angle;
+    for(let i in mines){
+      Body.applyForce( mines[i], mines[i].position, {x:m*Math.cos(n+i*2), y:m*Math.sin(n+i*2)});
+    }
+  }
+}
+dgbyid("l").onclick=function(){
+  let button=score.skill.bul;
+  if(button.dataset.cooling==0){
+    button.style.background="#999";
+    button.dataset.cooling=1
+    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},10000)
     
   }
 }
-
-
 
 
 
