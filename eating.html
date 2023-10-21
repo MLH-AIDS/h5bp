@@ -134,7 +134,7 @@ var hero=Bodies.rectangle(100, 100, 24, 24, {
     reds=Composite.create({label:"red"}),
     pinks=Composite.create({label:"pink"}),
     blues=Composite.create({label:"blue"}),
-Composite.add(engine.world,[hero,shockwave])
+Composite.add(engine.world,[hero])
 
 var walls=[
   Bodies.rectangle(render.options.width/2, 0, render.options.width, 30, {label:"wall",isStatic:true}),
@@ -169,7 +169,6 @@ function blue(){
   pink.render.fillStyle="#0000ff";
   pink.collisionFilter.group=Body.nextGroup(true)
   Composite.move(pinks,[pink],blues)
-  logs(1)
 }
 
 var score={
@@ -220,14 +219,14 @@ var score={
     }
   }
 };
-setTimeout("score.t()",1000)
+
 if (localStorage.scoren) {
     score.n = Number(localStorage.scoren);
 }
 if (localStorage.scorel) {
     score.l = Number(localStorage.scorel);
 }
-
+setTimeout("score.t()",300)
 
 Events.on(engine, 'collisionStart', function(event) {
     var pairs = event.pairs;
@@ -346,7 +345,6 @@ setInterval(function(){
       collisionFilter:{group: i.collisionFilter.group},
       label:"shoot"
     });
-    logs(i.collisionFilter.group)
     let p=Vector.sub(hero.position,shoot.position);
     Composite.add(engine.world,shoot);
     shootvector.push(shoot);
@@ -390,11 +388,6 @@ Events.on(runner, "beforeUpdate", function(){
         if(i.bodyB.label==="hero" || i.bodyB.label==="shockwave" || i.bodyB.isStatic===true){continue}
         let p=Vector.sub(i.bodyB.position,i.bodyA.position)
         Body.applyForce( i.bodyB, i.bodyB.position, Vector.mult(p,0.1/Math.sqrt(p.x**2+p.y**2)));
-        logs(i.bodyB.id===shockwave.id)
-        /*let v=Vector.sub(i.bodyB.position,shockwave.position)
-        v.m=0.15
-        v.n=v.x>0?Math.atan2(v.y,v.x):-Math.atan2(v.y,v.x);
-        Body.applyForce( i.bodyB, i.bodyB.position, {x:v.m*Math.cos(v.n), y:v.m*Math.sin(v.n)});*/
       }
       Composite.remove(engine.world,[shockwave])
     }
