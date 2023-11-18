@@ -7,11 +7,19 @@ body{
 margin:0;
 padding:0;
 }
+#jr{
+display:none;
+}
+#full{
+position:fixed;
+top:3vw;right:3vw;
+opacity:0.7
+}
 #j,#k,#l{
   margin:10;width:26;height:26;background:#999;
 }
 </style>
-<title>eating(matter.js) 1.3</title>
+<title>eating(matter.js) 1.4</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -26,10 +34,12 @@ padding:0;
     <div id="jrc" style="position:relative;width:20;height:20;background:#ddd"></div>
   </div>
 </div><!--#control-->
-<button data-fullscreen="full" style="margin:10" onclick="document.documentElement.webkitRequestFullScreen();"><i class="fa fa-expand" style="text-align:center;"></i></button>
-<button data-fullscreen="exit" style="margin:10" onclick="document.webkitExitFullscreen()"><i class="fa fa-compress" style="text-align:center;"></i></button>
+<div id="full">
+<button style="margin:10" onclick="document.documentElement.webkitRequestFullScreen();"><i class="fa fa-expand" style="text-align:center;"></i></button>
+<button style="margin:10" onclick="document.webkitExitFullscreen()"><i class="fa fa-compress" style="text-align:center;"></i></button>
+</div>
 <div id="log"></div>
-<a href="?m=1">11</a>
+<!--a href="?m=1">11</a-->
 <!-- <script src="matter.js"></script> -->
 <script src="matter.min.js"></script>
 <!--script src="matter-spring.js"></script-->
@@ -396,10 +406,6 @@ var Cbutton={
                 return i;
             }
         }
-        function clickworld(point){
-            return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width,
-            y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width }
-        }
     }
 };
 score.skill.buj=Cbutton.create({
@@ -459,6 +465,60 @@ score.skill.bul=Cbutton.create({
     }
 });
 
+var Cjr={
+    position:{x:210,y:render.canvas.height-210},
+    rollposition:{x:0,y:0},
+    radius:160,
+    backgroundcolor:rgba(250,250,250,0.5),
+    istouch:false,
+    render(){
+      var ctx=render.context;
+  
+      ctx.beginPath();
+      ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle=this.backgroundcolor;
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.arc(this.position.x+this.rollposition.x, this.position.y+this.rollposition.y, this.radius*0.3, 0, Math.PI * 2);
+      ctx.fillStyle=rgba(200,200,200,0.9)
+      ctx.fill();
+    },
+    touch(touchposition,start){
+      let tmove=Vector.sub(touchposition,this.position)
+      let distance=Vector.magnitudeSquared(tmove)**0.5
+      if(start&&distance<=this.radius){
+          this.istouch=true;
+      }
+      if(this.istouch){
+        if(distance<=this.radius){
+          this.rollposition=tmove
+        }else{
+          this.rollposition=Vector.mult(tmove,this.radius/distance)
+        }
+        Object.assign(heromove,Vector.div(this.rollposition,this.radius/1.75))
+        heromove.ismove=true
+      }
+    },
+    end(event){
+        Cjr.istouch=false
+        Cjr.rollposition=Vector.create()
+        
+        heromove.x=0
+        heromove.y=0
+        heromove.ismove=false
+    }
+};
+
+render.canvas.addEventListener("touchstart",function(event){
+      let touchposition=clickworld(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
+      Cjr.touch(touchposition,true)
+})
+render.canvas.addEventListener("touchmove",function(event){
+      let touchposition=clickworld(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
+      Cjr.touch(touchposition,false)
+})
+render.canvas.addEventListener("touchend",Cjr.end)
 
 function rgba(red,green,blue,opacity){
     return "rgba("+red+","+green+","+blue+","+opacity+")";
@@ -518,6 +578,7 @@ setInterval(function(){
 Events.on(runner, "beforeUpdate", function(){
   
   Cbutton.render()
+  Cjr.render()
   
   let ctx=render.context;
   let fontsize=render.options.height/25;
@@ -660,7 +721,10 @@ jr.addEventListener("touchend",heromove.end)
 
 
 
-
+function clickworld(point){
+    return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width,
+    y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width }
+}
 
 
 
