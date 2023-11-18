@@ -7,8 +7,11 @@ body{
 margin:0;
 padding:0;
 }
+#j,#k,#l{
+  margin:10;width:26;height:26;background:#999;
+}
 </style>
-<title>eating(matter.js) 1.1</title>
+<title>eating(matter.js) 1.3</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -18,18 +21,15 @@ padding:0;
 
 <canvas id="canvas" width="1200" height="675" style="width:100vw;">你的浏览器不支持canvas</canvas>
 
-
-<div style="float:right;">
-<div id="j" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
-<div id="k" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
-<div id="l" data-cooling="1" style="margin:10;width:20;height:20;background:#999;"></div>
-</div>
-<div id="jr" style="margin:10;width:100;height:100;background:#ccc;">
-  <div id="jrc" style="position:relative;width:20;height:20;background:#ddd"></div>
-</div>
-
+<div id="control">
+  <div id="jr" style="margin:10;width:100;height:100;background:#ccc;">
+    <div id="jrc" style="position:relative;width:20;height:20;background:#ddd"></div>
+  </div>
+</div><!--#control-->
+<button data-fullscreen="full" style="margin:10" onclick="document.documentElement.webkitRequestFullScreen();"><i class="fa fa-expand" style="text-align:center;"></i></button>
+<button data-fullscreen="exit" style="margin:10" onclick="document.webkitExitFullscreen()"><i class="fa fa-compress" style="text-align:center;"></i></button>
 <div id="log"></div>
-
+<a href="?m=1">11</a>
 <!-- <script src="matter.js"></script> -->
 <script src="matter.min.js"></script>
 <!--script src="matter-spring.js"></script-->
@@ -81,6 +81,7 @@ var Engine = Matter.Engine,
     
 //Matter.use('matter-springs');//弹簧插件
 
+
 // create an engine
 var engine = Engine.create({
   gravity:{x:0,y:0},
@@ -108,7 +109,41 @@ var render = Render.create({
 });
 
 //...
+var GETs = (function(){
+    var url = window.document.location.href.toString();
+    var u = url.split("?");
+    if(typeof(u[1]) == "string"){
+        u = u[1].split("&");
+        var get = {};
+        for(var i in u){
+            var j = u[i].split("=");
+            get[j[0]] = j[1];
+        }
+        return get;
+    } else {
+        return {};
+    }
+})();//get对象
 
+var loadstyle=[
+  {
+  width:1200,
+  height:675
+  },
+  {
+  width:600,
+  height:300
+  }
+];
+if(GETs.m){
+  
+  
+  /*let styles=loadstyle[GETs.m];
+  render.options.width=styles.width
+  render.options.height=styles.height
+  render.canvas.width=styles.width
+  render.canvas.height=styles.height*/
+}
 
 </script>
 <script>
@@ -175,9 +210,9 @@ var score={
   n:0, l:0,
   skill:{
     j:10,k:30,l:10000,
-    buj:dgbyid("j"),
-    buk:dgbyid("k"),
-    bul:dgbyid("l")
+    buj:undefined,
+    buk:undefined,
+    bul:undefined
   },
   a(){
     score.n++
@@ -197,25 +232,22 @@ var score={
     }
   },t(){
     if(score.n<score.skill.j){
-      dgbyid("j").style.background="#999";
-      dgbyid("j").dataset.cooling=1
+      score.skill.buj.coolingfull()
+      score.skill.buj.islock=true
     }else{
-      dgbyid("j").style.background="#ccc";
-      dgbyid("j").dataset.cooling=0
+      score.skill.buj.islock=false
     }
     if(score.n<score.skill.k){
-      dgbyid("k").style.background="#999"
-      dgbyid("k").dataset.cooling=1
+      score.skill.buk.coolingfull()
+      score.skill.buk.islock=true
     }else{
-      dgbyid("k").style.background="#ccc"
-      dgbyid("k").dataset.cooling=0
+      score.skill.buk.islock=false
     }
     if(score.n<score.skill.l){
-      dgbyid("l").style.background="#999"
-      dgbyid("l").dataset.cooling=1
+      score.skill.bul.coolingfull()
+      score.skill.bul.islock=true
     }else{
-      dgbyid("l").style.background="#ccc"
-      dgbyid("l").dataset.cooling=0
+      score.skill.bul.islock=false
     }
   }
 };
@@ -242,11 +274,10 @@ Events.on(engine, 'collisionStart', function(event) {
           score.a();
           Composite.remove(pinks,i.bodyB);
           Composite.remove(engine.world,i.bodyB)
-        }else if(i.bodyA.label==="hero"&&i.bodyB.label==="shoot"){
-          score.s();
-          shootvector.splice(shootvector.indexOf(i.bodyB),2);
-          Composite.remove(engine.world,i.bodyB)
-        }else if(i.bodyA.label==="wall"&&i.bodyB.label==="shoot"){
+        }else if(i.bodyB.label==="shoot"){
+          if(i.bodyA.label==="hero"){
+            score.s();
+          }
           shootvector.splice(shootvector.indexOf(i.bodyB),2);
           Composite.remove(engine.world,i.bodyB)
         }else if(i.bodyA.label==="hero"&&i.bodyB.label==="blue"){
@@ -308,8 +339,133 @@ Runner.run(runner, engine);
 //Engine.run(engine);
 //Render.run(render);
 
-setInterval(function(){
+//Cbutton: canvas button
+var Cbutton={
+    create(options){
+        let bu={
+            position:options.position,
+            radius:options.radius,
+            backgroundcolor:options.backgroundcolor,
+            text:options.text,
+            islock:true,
+            render(){
+                var ctx=render.context;
+        
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle=this.backgroundcolor;
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, Math.PI * -1 * this.cooling + Math.PI/2, Math.PI * 1 * this.cooling + Math.PI/2);
+                ctx.fillStyle="rgba(100,100,100,0.5)";
+                ctx.fill();
+                
+                Object.assign(ctx,{
+                    font:50+"px Arial",
+                    textAlign:"center",
+                    fillStyle:"#A3ACDC"
+                });
+                ctx.fillText(this.text, this.position.x, this.position.y+15);
+            },
+            cooling:1,
+            coolingvelocity:options.coolingvelocity,
+            coolingsub(){
+                if(this.cooling>0&&this.islock===false){
+                    this.cooling-=this.coolingvelocity;
+                }
+            },
+            coolingfull(){
+                this.cooling=1;
+            },
+            click:options.click
+        };
+        this.all.push(bu);
+        setInterval(function(){bu.coolingsub()},20)
+        return bu;
+    },
+    render(){
+        for(let i of this.all){
+            i.render();
+        }
+    },
+    all:[],
+    getbutton(position){
+        for(let i of this.all){
+            if(Vector.magnitudeSquared(Vector.sub(i.position,clickworld(position)))**0.5<=i.radius){
+                return i;
+            }
+        }
+        function clickworld(point){
+            return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width,
+            y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width }
+        }
+    }
+};
+score.skill.buj=Cbutton.create({
+    position:{x:render.canvas.width-100,y:300},
+    radius:60,
+    backgroundcolor:rgba(250,250,40,0.7),
+    text:"J",
+    coolingvelocity:0.002,
+    click:function(){
+        
+        if(this.cooling<=0){
+            this.coolingfull()
+            Body.setPosition(shockwave,hero.position)
+            Body.scale(shockwave,0.1,0.1)
+            shockwave.render.opacity=0.5
+            Composite.add(engine.world,[shockwave])
+        }
+    }
+});
+score.skill.buk=Cbutton.create({
+    position:{x:render.canvas.width-100,y:430},
+    radius:60,
+    backgroundcolor:rgba(250,250,40,0.7),
+    text:"K",
+    coolingvelocity:0.001,
+    click:function(){
+        
+        if(this.cooling<=0){
+            this.coolingfull()
+            let mines=[];
+            for(let i=0;i<3;i++){
+            mines.push(Bodies.polygon(hero.position.x,hero.position.y,3,12,{
+                render:{
+                  fillStyle:"#333333",
+                },
+                collisionFilter:{group: hero.collisionFilter.group},
+                label:"mine",
+                airFriction:1
+            }))
+            }
+            Composite.add(engine.world,mines)
+            let m=0.001, n=hero.angle;
+            for(let i in mines){
+              Body.applyForce( mines[i], mines[i].position, {x:m*Math.cos(n+i*2), y:m*Math.sin(n+i*2)});
+            }
+        }
+    }
+});
+score.skill.bul=Cbutton.create({
+    position:{x:render.canvas.width-100,y:560},
+    radius:60,
+    backgroundcolor:rgba(250,250,40,0.7),
+    text:"L",
+    coolingvelocity:0.0003,
+    click:function(){
+        this.coolingfull()
+    }
+});
 
+
+function rgba(red,green,blue,opacity){
+    return "rgba("+red+","+green+","+blue+","+opacity+")";
+}
+
+setInterval(function(){
+    
   i=11
   if(score.n>10){i=6}
   if(score.n>20){i=3}
@@ -343,7 +499,9 @@ setInterval(function(){
     let shoot=Bodies.circle(i.position.x,i.position.y,10,{
       render:{fillStyle:"#0000ff"},
       collisionFilter:{group: i.collisionFilter.group},
-      label:"shoot"
+      label:"shoot",
+      friction:0,
+      airFriction:0
     });
     let p=Vector.sub(hero.position,shoot.position);
     Composite.add(engine.world,shoot);
@@ -359,8 +517,10 @@ setInterval(function(){
 
 Events.on(runner, "beforeUpdate", function(){
   
+  Cbutton.render()
+  
   let ctx=render.context;
-  let fontsize=20;
+  let fontsize=render.options.height/25;
   Object.assign(ctx,{
     font:fontsize+"px Arial",
     textAlign:"start",
@@ -371,7 +531,7 @@ Events.on(runner, "beforeUpdate", function(){
     "累计得分: "+score.l
   ];
   for(let i in filltexts){
-    ctx.fillText(filltexts[i], 50, i*fontsize+525);
+    ctx.fillText(filltexts[i], 50, i*fontsize+render.options.height*5/6);
   }
   
   if(heromove.ismove){
@@ -393,7 +553,18 @@ Events.on(runner, "beforeUpdate", function(){
     }
   }
   
+  
+  
 });
+
+render.canvas.onclick=function(e){
+
+    let clicked=Cbutton.getbutton(Vector.create(e.pageX,e.pageY));
+    if(clicked){
+        clicked.click();
+    }
+    
+};
 
 window.onkeydown = function (event) {//按键
     event = event || window.event;//浏览器兼容
@@ -407,15 +578,21 @@ window.onkeydown = function (event) {//按键
         heromove.ismove=true
     }
     if (event.keyCode == 83) {//s
-        heromove.x=speed
-        heromove.ismove=true
-    }
-    if (event.keyCode == 68) {//D
         heromove.y=speed
         heromove.ismove=true
     }
+    if (event.keyCode == 68) {//D
+        heromove.x=speed
+        heromove.ismove=true
+    }
     if (event.keyCode == 74) {//J
-        odg();
+        
+    }
+    if (event.keyCode == 75) {//K
+        
+    }
+    if (event.keyCode == 76) {//L
+        
     }
 };
 window.onkeyup = function (event) {//按键
@@ -429,12 +606,21 @@ window.onkeyup = function (event) {//按键
         heromove.ismove=false
     }
     if (event.keyCode == 83) {//s
-        heromove.x=0
+        heromove.y=0
         heromove.ismove=false
     }
     if (event.keyCode == 68) {//D
-        heromove.y=0
+        heromove.x=0
         heromove.ismove=false
+    }
+    if (event.keyCode == 74) {//J
+        score.skill.buj.onclick()
+    }
+    if (event.keyCode == 75) {//K
+        score.skill.buk.onclick()
+    }
+    if (event.keyCode == 76) {//L
+        score.skill.bul.onclick()
     }
 };
 
@@ -473,53 +659,7 @@ jr.addEventListener("touchmove",heromove.begin)
 jr.addEventListener("touchend",heromove.end)
 
 
-dgbyid("j").onclick=function(){
-  let button=score.skill.buj;
-  if(button.dataset.cooling==0){
-    button.style.background="#999";
-    button.dataset.cooling=1
-    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},7000)
-    
-    Body.setPosition(shockwave,hero.position)
-    Body.scale(shockwave,0.1,0.1)
-    shockwave.render.opacity=0.5
-    Composite.add(engine.world,[shockwave])
-  }
-}
-dgbyid("k").onclick=function(){
-  let button=score.skill.buk;
-  if(button.dataset.cooling==0){
-    button.style.background="#999";
-    button.dataset.cooling=1
-    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},7000)
-    
-    let mines=[];
-    for(let i=0;i<3;i++){
-    mines.push(Bodies.polygon(hero.position.x,hero.position.y,3,12,{
-        render:{
-          fillStyle:"#333333",
-        },
-        collisionFilter:{group: hero.collisionFilter.group},
-        label:"mine",
-        airFriction:1
-    }))
-    }
-    Composite.add(engine.world,mines)
-    let m=0.001, n=hero.angle;
-    for(let i in mines){
-      Body.applyForce( mines[i], mines[i].position, {x:m*Math.cos(n+i*2), y:m*Math.sin(n+i*2)});
-    }
-  }
-}
-dgbyid("l").onclick=function(){
-  let button=score.skill.bul;
-  if(button.dataset.cooling==0){
-    button.style.background="#999";
-    button.dataset.cooling=1
-    setTimeout(function(){button.style.background="#ccc";button.dataset.cooling=0},10000)
-    
-  }
-}
+
 
 
 
@@ -527,6 +667,7 @@ dgbyid("l").onclick=function(){
 function dqsa(qsqs){return document.querySelectorAll(qsqs);}
 function logs(e){
 dgbyid("log").innerHTML+=e+", ";
+console.log(e)
 }
 
 
