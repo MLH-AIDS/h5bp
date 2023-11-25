@@ -19,7 +19,7 @@ opacity:0.7
   margin:10;width:26;height:26;background:#999;
 }
 </style>
-<title>eating(matter.js) 1.4</title>
+<title>eating(matter.js) 1.5</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -70,6 +70,23 @@ for (const C of [Array, String, TypedArray]) {
         });
 }
 
+var GETs = (function(){
+    var url = window.document.location.href.toString();
+    var u = url.split("?");
+    if(typeof(u[1]) == "string"){
+        u = u[1].split("&");
+        var get = {};
+        for(var i in u){
+            var j = u[i].split("=");
+            get[j[0]] = j[1];
+        }
+        return get;
+    } else {
+        return {};
+    }
+})();//get对象
+
+//logs(dqsa("body")[0])
 
 //matter.js 0.19.0
 // module模块 aliases
@@ -99,13 +116,16 @@ var engine = Engine.create({
 });
 
 // create a renderer
-var render = Render.create({
-    canvas: dgbyid("canvas"),
+var render;
+(function(){
+let canvas=dgbyid("canvas");
+render = Render.create({
+    canvas: canvas,
     //element: document.body,
     engine: engine,
     options: {
-        width: 1200,
-        height: 675,
+        width: canvas.width,
+        height: canvas.height,
         background:"#eee",
         hasBounds:true,
         //showAngleIndicator: true,
@@ -117,23 +137,9 @@ var render = Render.create({
          wireframes: false//线框模式
     }
 });
-
+})();
 //...
-var GETs = (function(){
-    var url = window.document.location.href.toString();
-    var u = url.split("?");
-    if(typeof(u[1]) == "string"){
-        u = u[1].split("&");
-        var get = {};
-        for(var i in u){
-            var j = u[i].split("=");
-            get[j[0]] = j[1];
-        }
-        return get;
-    } else {
-        return {};
-    }
-})();//get对象
+
 
 var loadstyle=[
   {
@@ -145,14 +151,14 @@ var loadstyle=[
   height:300
   }
 ];
-if(GETs.m){
+if(GETs.m && false){
   
   
-  /*let styles=loadstyle[GETs.m];
+  let styles=loadstyle[Number(GETs.m)];
   render.options.width=styles.width
   render.options.height=styles.height
   render.canvas.width=styles.width
-  render.canvas.height=styles.height*/
+  render.canvas.height=styles.height
 }
 
 </script>
@@ -270,6 +276,7 @@ if (localStorage.scorel) {
 }
 setTimeout("score.t()",300)
 
+
 Events.on(engine, 'collisionStart', function(event) {
     var pairs = event.pairs;
 
@@ -282,6 +289,11 @@ Events.on(engine, 'collisionStart', function(event) {
           score.s();
         }else if(i.bodyA.label==="wall"&&i.bodyB.label==="pink"){
           score.a();
+          Composite.remove(pinks,i.bodyB);
+          Composite.remove(engine.world,i.bodyB)
+        }else if(i.bodyA.label==="pink"&&i.bodyB.label==="pink"&&Math.floor((Math.random()*3))===1){
+          let scalem=(i.bodyA.area+i.bodyB.area)**0.5/(i.bodyA.area**0.5)
+          Body.scale(i.bodyA,scalem,scalem)//,Vector.div(Vector.add(i.bodyA.position,i.bodyB.position),2)
           Composite.remove(pinks,i.bodyB);
           Composite.remove(engine.world,i.bodyB)
         }else if(i.bodyB.label==="shoot"){
@@ -409,7 +421,7 @@ var Cbutton={
     }
 };
 score.skill.buj=Cbutton.create({
-    position:{x:render.canvas.width-100,y:300},
+    position:{x:render.canvas.width-100,y:render.canvas.height-375},
     radius:60,
     backgroundcolor:rgba(250,250,40,0.7),
     text:"J",
@@ -426,7 +438,7 @@ score.skill.buj=Cbutton.create({
     }
 });
 score.skill.buk=Cbutton.create({
-    position:{x:render.canvas.width-100,y:430},
+    position:{x:render.canvas.width-100,y:render.canvas.height-375+130},
     radius:60,
     backgroundcolor:rgba(250,250,40,0.7),
     text:"K",
@@ -455,7 +467,7 @@ score.skill.buk=Cbutton.create({
     }
 });
 score.skill.bul=Cbutton.create({
-    position:{x:render.canvas.width-100,y:560},
+    position:{x:render.canvas.width-100,y:render.canvas.height-375+260},
     radius:60,
     backgroundcolor:rgba(250,250,40,0.7),
     text:"L",
