@@ -19,7 +19,7 @@ opacity:0.7
   margin:10;width:26;height:26;background:#999;
 }
 </style>
-<title>eating(matter.js) 1.5</title>
+<title>eating(matter.js) 1.5.1</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -85,7 +85,10 @@ var GETs = (function(){
         return {};
     }
 })();//get对象
-
+if(GETs.m==="a"){
+  dgbyid("canvas").width=1200;
+  dgbyid("canvas").height=545;
+}
 //logs(dqsa("body")[0])
 
 //matter.js 0.19.0
@@ -245,6 +248,9 @@ var score={
       hero.render.opacity=0.5;
       setTimeout(function(){hero.render.opacity=1;},3000);
       score.t()
+      return true;
+    }else{
+      return false;
     }
   },t(){
     if(score.n<score.skill.j){
@@ -286,7 +292,10 @@ Events.on(engine, 'collisionStart', function(event) {
           Composite.remove(engine.world,i.bodyB);
           score.a();
         }else if(i.bodyA.label==="hero"&&i.bodyB.label==="pink"){
-          score.s();
+          if(score.s()){
+            let scalem=(i.bodyA.area+i.bodyB.area)**0.5/(i.bodyB.area**0.5)
+            Body.scale(i.bodyB,scalem,scalem)
+          }
         }else if(i.bodyA.label==="wall"&&i.bodyB.label==="pink"){
           score.a();
           Composite.remove(pinks,i.bodyB);
