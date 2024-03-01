@@ -19,7 +19,7 @@ opacity:0.7
   margin:10;width:26;height:26;background:#999;
 }
 </style>
-<title>eating(matter.js) 1.5.2</title>
+<title>eating(matter.js) 1.6.3</title>
 <!--link rel="stylesheet" href="style.css"-->
 <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css">
 </head>
@@ -172,15 +172,18 @@ if(GETs.m && false){
 </script>
 <script>
 
-var hero=Bodies.rectangle(100, 100, 24, 24, {
-      render:{
-        fillStyle:"#333333",
-        opacity:1
-      },
-      collisionFilter:{group: Body.nextGroup(true)},
-      label:"hero",
-      airFriction:0.85
-    }),
+var hero=(function(){
+        let hero=Bodies.rectangle(100, 100, 24, 24, {
+          render:{
+            fillStyle:"#333333",
+            opacity:1
+          },
+          collisionFilter:{group: Body.nextGroup(true)},
+          label:"hero"
+        });
+        Composite.add(engine.world,[hero]);
+        return hero;
+    })(),
     shockwave=Bodies.circle(100,100,24,{
       render:{
         fillStyle:"#333333",
@@ -189,12 +192,41 @@ var hero=Bodies.rectangle(100, 100, 24, 24, {
       isSensor:true,
       collisionFilter:{group: hero.collisionFilter.group},
       label:"shockwave"
-    })
+    }),
     reds=Composite.create({label:"red"}),
     pinks=Composite.create({label:"pink"}),
     blues=Composite.create({label:"blue"}),
-Composite.add(engine.world,[hero])
-
+    tishi=(function(){
+        let size = 50,
+            x = 40,
+            y = 40,
+            partA = Bodies.rectangle(x, y, size, size / 8, {render: {fillStyle:"#ff0000",opacity:0.8},isSensor:true}),
+            partB = Bodies.rectangle(x, y, size / 8, size, { render: partA.render,isSensor:partA.isSensor}),
+            partC = Bodies.circle(x, y, size * 5 / 7 /2, { render: {fillStyle:rgba(0,0,0,0), lineWidth: size / 8,strokeStyle: "#ff0000",opacity:0.8} ,isSensor:partA.isSensor});
+        let tishi = {
+            body: Body.create({
+                parts: [partA, partB, partC]
+            }),
+            live:false,
+            show(position){
+                Body.setPosition(tishi.body,position);
+                for(let i=1;i<tishi.body.parts.length;i++){
+                  tishi.body.parts[i].render.visible=true;
+                }
+            },
+            hide(){
+                for(let i=1;i<tishi.body.parts.length;i++){
+                  tishi.body.parts[i].render.visible=false;
+                }
+            }
+        };
+        tishi.hide();
+        
+        Body.setStatic(tishi.body,true)
+        Composite.add(engine.world,[tishi.body]);
+        return tishi;
+    })();
+    
 var walls=[
   Bodies.rectangle(render.options.width/2, 0, render.options.width, 30, {label:"wall",isStatic:true}),
   Bodies.rectangle(render.options.width/2, render.options.height, render.options.width, 30, {label:"wall",isStatic:true}),
@@ -223,17 +255,21 @@ function pink(){
   Composite.move(reds,[red],pinks)
 }
 function blue(){
-  let pink=Composite.allBodies(pinks)[Math.floor(Math.random() * Composite.allBodies(pinks).length)];
-  pink.label="blue";
-  pink.render.fillStyle="#0000ff";
-  pink.collisionFilter.group=Body.nextGroup(true)
-  Composite.move(pinks,[pink],blues)
+  for(let i of Composite.allBodies(pinks)){
+    if(i.area>30*30*4){
+      i.label="blue";
+      i.render.fillStyle="#0000ff";
+      i.collisionFilter.group=Body.nextGroup(true);
+      Composite.move(pinks,[i],blues);
+      break;
+    }
+  }
 }
 
 var score={
   n:0, l:0,
   skill:{
-    j:10,k:30,l:10000,
+    j:10,k:30,l:100,
     buj:undefined,
     buk:undefined,
     bul:undefined
@@ -407,8 +443,10 @@ var Cbutton={
             cooling:1,
             coolingvelocity:options.coolingvelocity,
             coolingsub(){
-                if(this.cooling>0&&this.islock===false){
+                if(this.cooling>this.coolingvelocity&&this.islock===false){
                     this.cooling-=this.coolingvelocity;
+                }else if(this.islock===false){
+                    this.cooling=0;
                 }
             },
             coolingfull(){
@@ -468,13 +506,13 @@ score.skill.buk=Cbutton.create({
                   fillStyle:"#333333",
                 },
                 collisionFilter:{group: hero.collisionFilter.group},
-                label:"mine",
-                airFriction:1
+                label:"mine"
             }))
             }
             Composite.add(engine.world,mines)
             let m=0.001, n=hero.angle;
             for(let i in mines){
+              Body.setVelocity(mines[i],hero.velocity);
               Body.applyForce( mines[i], mines[i].position, {x:m*Math.cos(n+i*2), y:m*Math.sin(n+i*2)});
             }
         }
@@ -486,8 +524,16 @@ score.skill.bul=Cbutton.create({
     backgroundcolor:rgba(250,250,40,0.7),
     text:"L",
     coolingvelocity:0.0003,
-    click:function(){
-        this.coolingfull()
+    click:function(e){
+        
+        if(this.cooling<=0){
+            if(!tishi.live){
+                tishi.live=true;
+                this.backgroundcolor=rgba(40,40,250,0.7);
+                return true;
+            }
+        }
+        
     }
 });
 
@@ -535,13 +581,12 @@ var Cjr={
         heromove.ismove=false
     }
 };
-
 render.canvas.addEventListener("touchstart",function(event){
-      let touchposition=clickworld(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
+      let touchposition=clickui(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
       Cjr.touch(touchposition,true)
 })
 render.canvas.addEventListener("touchmove",function(event){
-      let touchposition=clickworld(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
+      let touchposition=clickui(Vector.create(event.targetTouches[0].pageX,event.targetTouches[0].pageY))
       Cjr.touch(touchposition,false)
 })
 render.canvas.addEventListener("touchend",Cjr.end)
@@ -569,11 +614,14 @@ setInterval(function(){
 
 setInterval(function(){
 
+  //粉移动
+  /*
   let sp=1;//移动速度
   for(let i of Composite.allBodies(pinks)){
     let p=Vector.sub(hero.position,i.position)
     Body.setVelocity(i,Vector.mult(p,sp/Math.sqrt(p.x**2+p.y**2)))
   }
+  */
 
 },500)
 
@@ -582,24 +630,37 @@ setInterval(function(){
 
   let sp=2;//
   for(let i of Composite.allBodies(blues)){
+    if(i.area<=30*30*1){
+      i.label="pink";
+      i.render.fillStyle="#ff00ff";
+      Composite.move(blues,[i],pinks);
+      continue;
+    }
     let shoot=Bodies.circle(i.position.x,i.position.y,10,{
       render:{fillStyle:"#0000ff"},
       collisionFilter:{group: i.collisionFilter.group},
       label:"shoot",
       friction:0,
-      airFriction:0
+      frictionAir:0
     });
+    let scalem=(i.area-shoot.area)**0.5/(i.area**0.5);
+    Body.scale(i,scalem,scalem);
+    
     let p=Vector.sub(hero.position,shoot.position);
     Composite.add(engine.world,shoot);
     shootvector.push(shoot);
-    shootvector.push(Vector.mult(p,sp/Math.sqrt(p.x**2+p.y**2)));
-  }
-  for(let i=0;i<shootvector.length;i=i+2){
-    Body.setVelocity(shootvector[i],shootvector[i+1])
+    shootvector.push(Vector.mult(p,sp/Math.sqrt(p.x**2+p.y**2)*1.5));
   }
   
+  //蓝子弹移动
+  for(let i=0;i<shootvector.length;i=i+2){
+    try{
+    Body.setVelocity(shootvector[i],shootvector[i+1])
+    }catch(e){shootvector=[]}
+  }
 
 },1500)
+
 
 Events.on(runner, "beforeUpdate", function(){
   
@@ -622,7 +683,8 @@ Events.on(runner, "beforeUpdate", function(){
   }
   
   if(heromove.ismove){
-    Body.setVelocity(hero, heromove)
+    let seto=true?hero:tishi.body;
+    Body.setVelocity(seto, heromove);
   }
   
   if(Composite.allBodies(engine.world).indexOf(shockwave)!==-1){
@@ -640,6 +702,18 @@ Events.on(runner, "beforeUpdate", function(){
     }
   }
   
+  for (let body of pinks.bodies) {
+    if (body.isStatic || body.isSleeping || body.speed>2){
+        continue;
+    }
+
+    let p = Vector.sub(hero.position,body.position);
+    let moveScale = 0.001;
+    p = Vector.mult(p,moveScale/Math.sqrt(p.x**2+p.y**2));
+    body.force.y += body.mass * p.y;
+    body.force.x += body.mass * p.x;
+  }
+  
   
   
 });
@@ -647,10 +721,38 @@ Events.on(runner, "beforeUpdate", function(){
 render.canvas.onclick=function(e){
 
     let clicked=Cbutton.getbutton(Vector.create(e.pageX,e.pageY));
+    let c=false;
     if(clicked){
-        clicked.click();
+        if(clicked.click(e)){
+            c=true;
+        }
     }
-    
+    if(tishi.live&&!c){
+        score.skill.bul.coolingfull();
+        tishi.live=false;
+        score.skill.bul.backgroundcolor=rgba(250,250,40,0.7);
+        
+        tishi.show(clickworld({x:e.pageX, y:e.pageY}));
+        setTimeout(function(){
+            tishi.hide();
+        },800);
+        
+        for(let i=0;i<3;i++){
+          setTimeout(function(){
+            mine=Bodies.polygon(hero.position.x,hero.position.y,5,12,{
+                render:{
+                  fillStyle:"#333333",
+                },
+                collisionFilter:{group: hero.collisionFilter.group},
+                label:"mine"
+            });
+            Composite.add(engine.world,mine)
+            let m=0.03;
+            let mp=Vector.sub(tishi.body.position,mine.position)
+            Body.applyForce( mine, mine.position, Vector.mult(mp,m/((mp.x**2+mp.y**2)**0.5)));
+          }, i*300);
+        }
+    }
 };
 
 window.onkeydown = function (event) {//按键
@@ -686,28 +788,33 @@ window.onkeyup = function (event) {//按键
     event = event || window.event;//浏览器兼容
     if (event.keyCode == 87) {//W
         heromove.y=0
-        heromove.ismove=false
+        cismove()
     }
     if (event.keyCode == 65) {//a
         heromove.x=0
-        heromove.ismove=false
+        cismove()
     }
     if (event.keyCode == 83) {//s
         heromove.y=0
-        heromove.ismove=false
+        cismove()
     }
     if (event.keyCode == 68) {//D
         heromove.x=0
-        heromove.ismove=false
+        cismove()
     }
     if (event.keyCode == 74) {//J
-        score.skill.buj.onclick()
+        score.skill.buj.click()
     }
     if (event.keyCode == 75) {//K
-        score.skill.buk.onclick()
+        score.skill.buk.click()
     }
     if (event.keyCode == 76) {//L
-        score.skill.bul.onclick()
+        score.skill.bul.click("button")
+    }
+    function cismove(){
+        if(heromove.x===0&&heromove.y===0){
+          heromove.ismove=false
+        }
     }
 };
 
@@ -738,6 +845,9 @@ var heromove={
   jrcbase:{
     x:dgbyid("jr").offsetWidth/2-dgbyid("jrc").offsetWidth/2,
     y:dgbyid("jr").offsetHeight/2-dgbyid("jrc").offsetHeight/2
+  },
+  pc:{
+    
   }
 }
 heromove.end()
@@ -745,13 +855,55 @@ jr.addEventListener("touchstart",heromove.begin)
 jr.addEventListener("touchmove",heromove.begin)
 jr.addEventListener("touchend",heromove.end)
 
+var slookat={
+  x: render.options.width/2,
+  y: render.options.height/2,
+  size:1,
+  body:hero,
+  cx:0,
+  cy:0,
+  isfollow:false,
+  lookat:function(x,y,csize,csizex){
+    if(csizex){
+      if(slookat.size*csize>1&&slookat.size*csize<50){
+        slookat.size*=csize;
+      }else if(slookat.size*csize<1){
+        slookat.size=1
+      }else if(slookat.size*csize>50){
+        slookat.size=50
+      }
+    }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
+      slookat.size+=csize;
+    }
+    let size=slookat.size;
+    if(slookat.isfollow){
+      slookat.cx+=x*size;
+      slookat.cy+=y*size;
+    }else{
+      slookat.x+=x*size;
+      slookat.y+=y*size;
+    }
+    Render.lookAt(render, {
+      min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
+      max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
+    });
+  },
+  followthings:function(){
+    slookat.x=slookat.body.position.x+slookat.cx;
+    slookat.y=slookat.body.position.y+slookat.cy;
+    slookat.lookat(0,0,0)
+  }
+}
 
 
 function clickworld(point){
     return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width,
     y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width }
 }
-
+function clickui(point){
+    return { x:point.x/render.canvas.offsetWidth*render.canvas.width,
+    y:point.y/render.canvas.offsetWidth*render.canvas.width }
+}
 
 
 function dqsa(qsqs){return document.querySelectorAll(qsqs);}
