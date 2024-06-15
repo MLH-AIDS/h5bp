@@ -201,16 +201,18 @@ input:checked + .slider:before {
 <div class="bu">
 
 <button id="fullscreen" onclick="document.documentElement.webkitRequestFullScreen();">全屏</button>
-<input type="range" min="0" max="10" step="1" oninput="slookat.lookat(0,0,(this.value-5)*0.1);this.value=5;">
-<input type="range" min="0" max="10" step="1" oninput="slookat.lookat((this.value-5)*10,0,0);this.value=5;">
-<input type="range" min="0" max="10" step="1" oninput="slookat.lookat(0,(this.value-5)*10,0);this.value=5;">
+<div>
+<input type="range" min="0" max="10" step="1" oninput="view.lookat(0,0,(this.value-5)*0.1);this.value=5;">
+</div>
+<input type="range" min="0" max="10" step="1" oninput="view.lookat((this.value-5)*10,0,0);this.value=5;">
+<input type="range" min="0" max="10" step="1" oninput="view.lookat(0,(this.value-5)*10,0);this.value=5;">
 <input type="text" onchange="eval(this.value)">
 <input type="checkbox" id="check">
 </div>
 
 <canvas id="canvas" width="1200" height="675" style="width:100vw;">你的浏览器不支持canvas</canvas>
-<script src="matter.js"></script>
-<!-- <script src="matter.min.js"></script> -->
+<!--script src="matter.min.js"></script-->
+<script src="https://cdn.bootcdn.net/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <!--script src="matter-spring.js"></script-->
 <script src="tool.js"></script>
 <script>
@@ -233,24 +235,154 @@ function at(n) {
     // Otherwise, this is just normal property access
     return this[n];
 }
-const TypedArray = Reflect.getPrototypeOf(Int8Array);
-for (const C of [Array, String, TypedArray]) {
+for (const C of [Array, String, Reflect.getPrototypeOf(Int8Array)]) {
     Object.defineProperty(C.prototype, "at",
         {
-            value: at,
+            value: function(n){
+                // ToInteger() abstract op
+                n = Math.trunc(n) || 0;
+                // Allow negative indexing from the end
+                if (n < 0) n += this.length;
+                // OOB access is guaranteed to return undefined
+                if (n < 0 || n >= this.length) return undefined;
+                // Otherwise, this is just normal property access
+                return this[n];
+            },
             writable: true,
             enumerable: false,
             configurable: true
         });
 }
+var _clear=(function(){
+//兼容
+    var _getTexture = function(render, imagePath) {
+        var image = render.textures[imagePath];
 
+        if (image)
+            return image;
 
+        image = render.textures[imagePath] = new Image();
+        image.src = imagePath;
+
+        return image;
+    };
+    Matter.Render.bodies = function(render, bodies, context) {
+        var c = context,
+            engine = render.engine,
+            options = render.options,
+            showInternalEdges = options.showInternalEdges || !options.wireframes,
+            body,
+            part,
+            i,
+            k;
+
+        for (i = 0; i < bodies.length; i++) {
+            body = bodies[i];
+
+            if (!body.render.visible)
+                continue;
+
+            // handle compound parts
+            for (k = body.parts.length > 1 ? 1 : 0; k < body.parts.length; k++) {
+                part = body.parts[k];
+
+                if (!part.render.visible)
+                    continue;
+
+                if (options.showSleeping && body.isSleeping) {
+                    c.globalAlpha = 0.5 * part.render.opacity;
+                } else if (part.render.opacity !== 1) {
+                    c.globalAlpha = part.render.opacity;
+                }
+
+                if (part.render.sprite && part.render.sprite.texture && !options.wireframes) {
+                    // part sprite
+                    var sprite = part.render.sprite,
+                        texture = _getTexture(render, sprite.texture);
+
+                    c.translate(part.position.x, part.position.y);
+                    c.rotate(part.angle);
+
+                    if(sprite.cutx!=null&&sprite.cutx!=undefined){
+                        c.drawImage(
+                            texture,
+                            sprite.cutx,
+                            sprite.cuty,
+                            sprite.cutwidth,
+                            sprite.cutheight,
+                            texture.width * -sprite.xOffset * sprite.xScale,
+                            texture.height * -sprite.yOffset * sprite.yScale,
+                            texture.width * sprite.xScale,
+                            texture.height * sprite.yScale
+                        );
+                    }else{
+                        c.drawImage(
+                            texture,
+                            texture.width * -sprite.xOffset * sprite.xScale,
+                            texture.height * -sprite.yOffset * sprite.yScale,
+                            texture.width * sprite.xScale,
+                            texture.height * sprite.yScale
+                        );
+                    }
+
+                    // revert translation, hopefully faster than save / restore
+                    c.rotate(-part.angle);
+                    c.translate(-part.position.x, -part.position.y);
+                } else {
+                    // part polygon
+                    if (part.circleRadius) {
+                        c.beginPath();
+                        c.arc(part.position.x, part.position.y, part.circleRadius, 0, 2 * Math.PI);
+                    } else {
+                        c.beginPath();
+                        c.moveTo(part.vertices[0].x, part.vertices[0].y);
+
+                        for (var j = 1; j < part.vertices.length; j++) {
+                            if (!part.vertices[j - 1].isInternal || showInternalEdges) {
+                                c.lineTo(part.vertices[j].x, part.vertices[j].y);
+                            } else {
+                                c.moveTo(part.vertices[j].x, part.vertices[j].y);
+                            }
+
+                            if (part.vertices[j].isInternal && !showInternalEdges) {
+                                c.moveTo(part.vertices[(j + 1) % part.vertices.length].x, part.vertices[(j + 1) % part.vertices.length].y);
+                            }
+                        }
+
+                        c.lineTo(part.vertices[0].x, part.vertices[0].y);
+                        c.closePath();
+                    }
+
+                    if (!options.wireframes) {
+                        c.fillStyle = part.render.fillStyle;
+
+                        if (part.render.lineWidth) {
+                            c.lineWidth = part.render.lineWidth;
+                            c.strokeStyle = part.render.strokeStyle;
+                            c.stroke();
+                        }
+
+                        c.fill();
+                    } else {
+                        c.lineWidth = 1;
+                        c.strokeStyle = '#bbb';
+                        c.stroke();
+                    }
+                }
+
+                c.globalAlpha = 1;
+            }
+        }
+    };
+    return null;
+})();
 //matter0.19
 // module模块 aliases
 var Engine = Matter.Engine,
     Render = Matter.Render,
     Runner = Matter.Runner,
     Bodies = Matter.Bodies,
+    Common = Matter.Common,
     Constraint = Matter.Constraint,//约束
     Composite = Matter.Composite,
     Composites = Matter.Composites,
@@ -284,6 +416,7 @@ var render = Render.create({
         showPerformance: true,
         showDebug:true,
         showIds: true,
+        showCollisions: true,
         //showSeparations: true,
         //showVelocity: true,
          wireframes: false//线框模式
@@ -295,8 +428,208 @@ var render = Render.create({
 
 </script>
 
+<script src="filebag.js"></script>
+<!--/*  资源链接  */-->
+
+<script>
+//预加载
+if(false){
+render.options.wireframes=true;
+for(let imagePath of filebag.ihpnglink){
+    imagePath="https://www.imagehub.cc/"+imagePath;
+    let image = render.textures[imagePath];
+
+    if (!image){
+        image = render.textures[imagePath] = new Image();
+        image.src = imagePath;
+    }
+}
+
+let isload=function(){
+    let t=0
+    for(let v of Object.values(render.textures)){
+        if(v.complete){
+            t++
+        }
+    }
+    if(t===Object.values(render.textures).length){
+        render.options.wireframes=false;
+    }
+    //alert(`${t}/${Object.values(render.textures).length}`);
+}
+setInterval(isload,3000)
+}
+</script>
+
 <script src="options.js"></script>
 <!--/*  贴图等  */-->
+
+<script>
+//仅贴图的物体
+var urbody=(function(){
+    let obj={};
+    var _getTexture = function(render, imagePath) {
+        var image = render.textures[imagePath];
+
+        if (image)
+            return image;
+
+        image = render.textures[imagePath] = new Image();
+        image.src = imagePath;
+
+        return image;
+    };
+    var _setValue = function(value, defaultvalue) {
+        if(typeof value==="undefined"){
+            value=defaultvalue;
+        }
+        return value;
+    };
+    obj.create=function(position,options){
+        return {
+            position:Vector.clone(position),
+            texture: options.texture,
+            angle: _setValue(options.angle,0),
+            cutx: options.cutx,
+            cuty: options.cuty,
+            cutwidth: options.cutwidth,
+            cutheight: options.cutheight,
+            xOffset: _setValue(options.xOffset,0.5),
+            yOffset: _setValue(options.yOffset,0.5),
+            xScale: _setValue(options.xScale,1),
+            yScale: _setValue(options.yScale,1),
+            birth: engine.timing.timestamp,
+            parent: undefined,
+            relative: false,
+            type:"urbody"
+        };
+    };
+    //obj.setPosition=();
+    obj.worldprototype={
+        add(part){
+            if(Common.isArray(part)){
+                for(let p of part){
+                    this.all.push(p);
+                }
+            }else{
+                this.all.push(part)
+            }
+        },
+        remove(){
+            if(Common.isArray(part)){
+                for(let p of part){
+                    this.all.push(p);
+                }
+            }else{
+                this.all.push(part)
+            }
+        },
+        render:function(){
+            let world=this;
+            Render.startViewTransform(render);
+            let c=render.context;
+            for(let b of world.all){
+                let po;
+                if(b.parent&&b.relative){
+                    po=Vector.add(b.position,b.parent.position);
+                    po.angle=b.angle+b.parent.angle;
+                }else{
+                    po=b.position;
+                    po.angle=b.angle;
+                }
+                c.translate(po.x, po.y);
+                c.rotate(po.angle);
+                let texture=_getTexture(render,b.texture);
+                let sprite=b;
+                c.drawImage(
+                    texture,
+                    sprite.cutx,
+                    sprite.cuty,
+                    sprite.cutwidth,
+                    sprite.cutheight,
+                    texture.width * -sprite.xOffset * sprite.xScale,
+                    texture.height * -sprite.yOffset * sprite.yScale,
+                    texture.width * sprite.xScale,
+                    texture.height * sprite.yScale
+                );
+                c.translate(-po.x, -po.y);
+                c.rotate(-po.angle);
+            }
+            Render.endViewTransform(render);
+        },
+        run(){
+            Events.on(render,"afterRender",this.render);
+            this.enabled=true;
+        },
+        stop(){
+            Events.off(render,"afterRender",this.render);
+            this.enabled=false;
+        }
+    };
+    obj.createworld=function(){
+        let world={
+            all:[],
+            enabled:false,
+            type:"urworld"
+        };
+        for(let i in obj.prototype){
+            world[i]=obj.worldprototype[i];
+        }
+        return world;
+    };
+    obj.rotateAbout=function(body,angle,point){
+        Vector.rotateAbout(body.position,angle,point,body.position);
+        if(!body.relative){
+            body.angle+=angle;
+        }
+    };
+    obj.render=function(world){
+        Render.startViewTransform(render);
+        let c=render.context;
+        for(let b of world.all){
+            let po;
+            if(b.parent&&b.relative){
+                po=Vector.add(b.position,b.parent.position);
+                po.angle=b.angle+b.parent.angle;
+            }else{
+                po=b.position;
+                po.angle=b.angle;
+            }
+            c.translate(po.x, po.y);
+            c.rotate(po.angle);
+            let texture=_getTexture(render,b.texture);
+            let sprite=b;
+            c.drawImage(
+                texture,
+                sprite.cutx,
+                sprite.cuty,
+                sprite.cutwidth,
+                sprite.cutheight,
+                texture.width * -sprite.xOffset * sprite.xScale,
+                texture.height * -sprite.yOffset * sprite.yScale,
+                texture.width * sprite.xScale,
+                texture.height * sprite.yScale
+            );
+            c.translate(-po.x, -po.y);
+            c.rotate(-po.angle);
+        }
+        Render.endViewTransform(render);
+    };
+    return obj;
+})();
+var urworld=urbody.createworld();
+urworld.all.push(urbody.create({x:0,y:0},{
+  texture: "https://s1.imagehub.cc/images/2023/05/03/IngameAtlas.png",
+  cutx: 679,
+  cuty: 519,
+  cutwidth: 110,
+  cutheight: 110,
+  xScale: 100/2024,
+  yScale: 100/2024
+}));
+
+
+</script>
 
 <script>
 var controlConstraint={
@@ -338,12 +671,197 @@ var controlConstraint={
     return [this.create2(bodya,bodyb,{x:xx,y:yy},stiffness,0.7),
     this.create2(bodya,bodyb,pointa,stiffness,0.7),
     this.create2(bodya,bodyb,{x:xb,y:yb},stiffness,0.7)]
+  },
+  connect2: function(bodya,bodyb,xory,stiffness){
+    function gbp(body){//get build position
+      return Vector.mult(vector_round(Vector.div(body.position,100)),100)
+    }
+    function vector_round(vector){
+      return {x: Math.round(vector.x), y: Math.round(vector.y)};
+    }
+    let mo= xory===0 ? {x:-50,y:0} : {x:0,y:-50};
+    return Constraint.create({
+        pointA: Vector.add(Vector.mult(Vector.sub(gbp(bodya),bodya.position),1),mo),
+        pointB: Vector.sub(Vector.mult(Vector.sub(gbp(bodyb),bodyb.position),1),mo),
+        bodyA: bodya,
+        bodyB: bodyb,
+        stiffness: stiffness,
+        type: 'constraint'
+    });
+  },
+  removebybody(event){
+    let body=event.object;
+    if(body.type==="body"){
+        for(let c of Composite.allConstraints(engine.world)){
+            if(c.bodyA.id===body.id||c.bodyB.id===body.id){
+                Composite.remove(engine.world,c);
+            }
+        }
+    }
   }
 };
-
+Events.on(engine.world, "beforeRemove", controlConstraint.removebybody);
 
 var lattice=100;
-
+var build = {
+  sameposition:function(oa,ob){
+    return oa.x===ob.x&&oa.y===ob.y;
+  },
+  display:{
+    renderurworld:function(){
+        urbody.render(urworld);
+    },
+    show:function(){
+        Events.on(render,"afterRender",this.renderurworld)
+    },
+    hide:function(){
+        Events.off(render,"afterRender",this.renderurworld)
+    }
+  },
+  gird:{
+    all: (function(){
+        let girds=[],
+            position={x:0,y:0},
+            sprite={
+                texture: "https://s1.imagehub.cc/images/2023/05/03/MenuAtlas2.png",
+                cutx: 1774,
+                cuty: 1412,
+                cutwidth: 195,
+                cutheight: 195,
+                xScale: 0.050,
+                yScale: 0.050
+            };
+        for(let c=0;c<3;c++){
+            for(let r=0;r<4;r++){
+                let b=urbody.create(Vector.add(position,{x:100*r,y:100*c}),sprite)
+                girds.push(b);
+                urworld.all.push(b);
+            }
+        }
+        this.position=girds[0].position
+        return girds;
+    })(),
+    position: undefined,
+    translate(position){
+        for(let i of this.all){
+            i.position=Vector.add(position,i.position);
+        }
+    },
+    setposition(position){
+        position=build.round(
+            Vector.sub(
+                position,
+                Vector.div(
+                    Vector.add(
+                        this.all[0].position,
+                        this.all.at(-1).position
+                    ),
+                    2
+                )
+            )
+        );
+        this.translate(position);
+    },
+  },
+  part:{
+    all:[],
+    get(position){
+        position=build.round(position);
+        ingird=[];
+        for(let part of this.all){
+            if(build.sameposition(part.position,position)){
+                ingird.push(part);
+            }
+        }
+        return ingird;
+    },
+    add(position,type){
+        position=build.round(position);
+        let ingird=this.get(position);
+        if(ingird.length>1){
+            return false;
+        }else if(ingird.length===1&&partsource.isbox(ingird[0].label)===partsource.isbox(type)){
+            return false;
+        }
+        
+        let sprites=partsource.getsprites(type)
+        let part={
+            position:position,
+            angle:0,
+            id:0,
+            label: type,
+            sprites: sprites,
+            type:"part"
+        };
+        for(let sprite of sprites){
+            sprite.parent=part;
+            sprite.relative=true;
+            urworld.all.push(sprite);
+        }
+        this.all.push(part)
+        return true;
+    },
+    translateparts(position){
+        for(let part of this.all){
+            part.position.x+=position.x;
+            part.position.y+=position.y;
+        }
+    },
+    rotate(part){
+        let angle=Math.PI/2;
+        for(let s of part.sprites){
+            urbody.rotateAbout(s,angle,{x:0,y:0});
+        }
+        part.angle+=angle;
+    },
+    remove(part){
+        for(let sprite of part.sprites){
+            removefromarr(urworld.all,sprite);
+        }
+        removefromarr(this.all,part);
+        function removefromarr(arr,value){
+            arr.splice(Common.indexOf(arr,value),1);
+        }
+    },
+    clear(){
+        while(this.all.length!==0){
+            this.remove(this.all[0]);
+        }
+    },
+    save(){
+        alert(JSON.stringify(this.all))
+    },
+    load(){
+        //JSON.parse
+    }
+  },
+  round:function(position){
+    return {
+      x:Math.round((position.x)/100)*100,
+      y:Math.round((position.y)/100)*100
+    };
+  }
+};
+var partsource={
+    isbox(type){
+        return type.includes("box");
+    },
+    getsprites(type){
+        let sprites=[];
+        switch(type){
+            case "mubox0":
+            sprites.push(urbody.create({x:0,y:0},toptions.mubox0.render.sprite));
+            break;
+            case "febox0":
+            sprites.push(urbody.create({x:0,y:0},toptions.febox0.render.sprite));
+            break;
+            
+        }
+        return sprites;
+    },
+    
+};
+build.display.show()
 var buildgird = {
   size: 100,
   positiontogird:function(position){
@@ -396,13 +914,20 @@ var buildgird = {
     Composite.add(buildgird.gird,body)
   },
   isput:function(position){
-    return Composite.allBodies(buildgird.bodies).some((body)=>{buildgird.issameposition(body.position,position)})
+    return Composite.allBodies(buildgird.bodies).some((body)=>{return buildgird.issameposition(body.position,position)})
   },
   start:function(){
     for(let i of Composite.allBodies(buildgird.bodies)){
       Body.setStatic(i,false);
     }
     Composite.move(buildgird.bodies,Composite.allBodies(buildgird.bodies),engine.world)
+  },
+  generate:{
+    bodies(){
+        for(let part of build.part.all){
+            
+        }
+    }
   },
   round:function(position){
     return {
@@ -411,8 +936,16 @@ var buildgird = {
     };
   }
 };
-buildgird.show()
+//buildgird.show()
 //Composite.rotate(buildgird.gird,Math.PI / 180 * 30,{x:0,y:0})
+
+/*
+{
+    position:{},
+    
+    type:"buildbody"
+}
+*/
 function arrequa(arr1,arr2){
   if(arr1.length===arr2.length){
     for(let i=0;i<arr1.length;i++){
@@ -429,9 +962,50 @@ var bodymodel={
   //muwheel:wwheel(0*lattice, 0*lattice, 8.5, 58, 34, toption.muwheel0.wsjx.render, toption.muwheel0.wcircle.render),
   dpen:Bodies.polygon((0+0.25)*lattice, 0*lattice, 3, 50, toptions.dpen0),
   TNT:Bodies.rectangle(0*lattice, 0*lattice, 1*lattice, 1*lattice, toptions.tnt0),
-  g:function(){
+  g:function(position,type){
     ///create
-    
+    let body=undefined;
+    let box=0;
+    switch(type){
+      case "mubox":
+      body=Bodies.rectangle(position.x, position.y, 1*lattice, 1*lattice, toptions.mubox0);
+      box=1;
+      break;
+      case "febox":
+      body=Bodies.rectangle(position.x, position.y, 1*lattice, 1*lattice, toptions.febox0);
+      box=1;
+      break;
+      case "pig":
+      body=Bodies.circle(position.x, position.y, 44, toptions.pig0);
+      body.label={};
+    Object.assign(body.label,{
+      name: "pig"
+    });
+    logs(body.label.name+"$$")
+      break;
+      case "egg":
+      body=Bodies.circle(position.x, position.y, 44, toptions.egg0);
+      case "dpen":
+      body=Bodies.polygon(position.x+25, position.y, 3, 50, toptions.dp0);
+      body.label={};
+      Object.assign(body.label,{buildposition: position})
+      break;
+      case "TNT":
+      body=Bodies.rectangle(position.x, position.y, 1*lattice, 1*lattice, toptions.tnt0);
+      body.label={};
+      Object.assign(body.label,{name: "TNT",erange:200,eforce:1});
+      break;
+      case "rocket":
+      break;
+      case "muwheel":
+      body=wwheel(position.x, position.y, 8.5, 58, 34, toptions.muwheel0.wsjx.render, toptions.muwheel0.wcircle.render);
+    }
+    if(box===0){
+      thingsp.thingss.push(body);
+    }else{
+      boxsp.boxss.push(body);
+    }
+    return body;
   }
 };
 var thingsp={
@@ -446,126 +1020,31 @@ var boxsp={
   boxssxyx:[],
   boxssxyy:[]
 }
-class Things {
-  constructor(xy,radius,rd) {
-    this.xy = xy;
-    this.radius=radius;
-    this.render = rd;
-    this.body = undefined;
-    this.loop = undefined;
-    this.loopdo = undefined;
-  }
-  g(){
-    return {xy:this.xy,
-    radius:this.radius,
-    render:this.render,
-    body:this.body,
-    loop:this.loop,
-    loopdo:this.loopdo}
-  }
-  addbd(xy) {
-    thingsp.thingss.push(this.body);
-    thingsp.thingssxy.push(xy.x+","+xy.y);
-    thingsp.thingssxyx.push((xy.x+1)+","+xy.y);
-    thingsp.thingssxyy.push(xy.x+","+(xy.y+1));
-    return this.body;
-  }
-  follow(){
-    slookat.x=this.body.position.x;
-    slookat.y=this.body.position.y;
-  }
-  start(){
-    this.loop=setTimeout(this.loopdo,100);
-  }
-  stop(){
-    clearTimeout(this.loop);
-  }
-}
-class Box extends Things {
-  constructor(xy,rd) {
-    super(xy,undefined,rd);
-  }
-  create() {
-    this.body=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
-    boxsp.boxss.push(this.body);
-    boxsp.boxssxy.push(this.xy.x+","+this.xy.y);
-    boxsp.boxssxyx.push((this.xy.x+1)+","+this.xy.y);
-    boxsp.boxssxyy.push(this.xy.x+","+(this.xy.y+1));
-    return this.body;
-  }
-}
-class Circle extends Things {
-  constructor(xy,radius,rd) {
-    super(xy,radius,rd);
-  }
-  create() {
-    this.body=Bodies.circle(this.xy.x*lattice, this.xy.y*lattice, this.radius, this.render);
-    let curobj=this;
-    this.loopdo=function(){controlbody.addforce(curobj.body,0.44);curobj.start();};
-    return this.addbd(this.xy);
-  }
-}
-class Wheel extends Things {
-  constructor(xy,range,rd) {
-    super(xy,undefined,rd);
-    this.range=range;
-  }
-  create() {
-    this.body=wwheel(this.xy.x*lattice, this.xy.y*lattice, 8.5, 58, 34, this.render.wsjx.render, this.render.wcircle.render);
-    logs(Composite.allBodies(this.body)[0].position.y)
-    Composite.rotate(this.body, this.range, {x:1,y:5}, true)
-    return this.addbd(this.xy);
-  }
-}
-class Rocket extends Things {
-  constructor(xy,range,rd) {
-    super(xy,undefined,rd);
-    this.range=range;
-  }create() {
-    this.body=undefined;
-    this.loopdo=function(){
-      Body.setVelocity( this.body, {x: 0, y: -20});
-      curobj.start();
-    }
-  }
-}
-class Dpen extends Things {
-  constructor(xy,rd) {
-    super(xy,undefined,rd);
-  }create() {
-    this.body=Bodies.polygon((this.xy.x+0.25)*lattice, this.xy.y*lattice, 3, 50, this.render);
-    return this.addbd(this.xy);
-  }
-  start(){
-    controlbody.addforce(this.body,0.44);
-  }
-}
-class TNT extends Things {
-  constructor(xy,rd) {
-    super(xy,undefined,rd);
-  }
-  create() {
-    this.body=Bodies.rectangle(this.xy.x*lattice, this.xy.y*lattice, 1*lattice, 1*lattice, this.render)
-    return this.addbd(this.xy);
-  }
-  explode(){
-    controlbody.explode(this.body.position,undefined,1);
-  }
-}
+
+
 function thingsadd(things){things.create();}
   try{
-var dpen=new Dpen({x:0,y:0},toptions.dp0).create()
-  new Box({x:1,y:0},toptions.febox0).create()
-  new Box({x:2,y:0},toptions.febox0).create()
-  new TNT({x:3,y:0},toptions.tnt0).create()
-  var b1=new Box({x:3,y:0},toptions.febox0);var b2=b1.create()
-  new Box({x:3,y:-1},toptions.febox0).create()
+var dpen=bodymodel.g({x:0,y:0},"dpen")
+  //new Box({x:1,y:0},toptions.febox0).create()
+  //new Box({x:2,y:0},toptions.febox0).create()
+  bodymodel.g({x:400,y:0},"TNT")
+  //var b1=new Box({x:3,y:0},toptions.febox0);
+  var b2=bodymodel.g({x:300,y:0},"febox")
+  
+  bodymodel.g({x:500,y:-100},"febox")
+  bodymodel.g({x:500,y:0},"febox")
+  bodymodel.g({x:500,y:0},"TNT")
+  //new Box({x:3,y:-1},toptions.febox0).create()
 //b1.start()
 //Matter.Events.on(b2, "click", function(e){logs(e)})
-new Wheel({x:1,y:1},0,toptions.muwheel0).create();
-var wheel=new Wheel({x:3,y:1},0,toptions.muwheel0).create();
-var pig00=new Circle({x:2,y:0},45,toptions.pig0)
-var pig0=pig00.create()
+bodymodel.g({x:100,y:100},"muwheel");
+var wheel=bodymodel.g({x:300,y:100},"muwheel");
+var pig0=bodymodel.g({x:200,y:0},"pig")
+bodymodel.g({x:500,y:100},"muwheel")
+bodymodel.g({x:100,y:0},"febox")
+bodymodel.g({x:200,y:0},"febox")
+//bodymodel.g({x:300,y:0},"febox")
+
 
   }catch(e){logs(e)}
 
@@ -602,27 +1081,32 @@ function generate(){
   
   
   for ( let i of compareAr(boxsp.boxss.map((v)=>{return v.position}),boxsp.boxss.map((v)=>{return {x:v.position.x+100,y:v.position.y}}),true) ){
-      bodyss=bodyss.concat(controlConstraint.connect(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x-100,y:i.y},boxsp.boxss),{x:-30,y:0},1));
+      bodyss=bodyss.concat(controlConstraint.connect2(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x-100,y:i.y},boxsp.boxss),0,1));
   }
   for ( let i of compareAr(boxsp.boxss.map((v)=>{return v.position}),boxsp.boxss.map((v)=>{return {x:v.position.x,y:v.position.y+100}}),true) ){
-      bodyss=bodyss.concat(controlConstraint.connect(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x,y:i.y-100},boxsp.boxss),{x:0,y:-30},1));
+      bodyss=bodyss.concat(controlConstraint.connect2(bodyinposition(i,boxsp.boxss),bodyinposition({x:i.x,y:i.y-100},boxsp.boxss),1,1));
   }
   function bodyinposition(position,arr){
     for(let i of arr){
-      if(buildgird.issameposition(i.position,position)){
-      return i
+      if(build.sameposition(position, i.label.buildposition||i.position)){
+        if(i.type!=="composite"){
+          return i
+        }else{
+          return i.label.connectpart
+        }
       }
     }
   }
   
   
   try{
-  bodyss=bodyss.concat(controlConstraint.connect(b2,Composite.allBodies(wheel)[0],{x:0,y:30},1));
-  bodyss=bodyss.concat(controlConstraint.connect(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],Composite.allBodies(thingsp.thingss[thingsp.thingssxy.indexOf("1,1")])[0],{x:0,y:30},1));
-  bodyss=bodyss.concat(controlConstraint.connect(boxsp.boxss[boxsp.boxssxy.indexOf("1,0")],thingsp.thingss[thingsp.thingssxy.indexOf("0,0")],{x:-30,y:0},1));
+  bodyss=bodyss.concat(controlConstraint.connect2(Composite.allBodies(wheel)[0],b2,1,1));
+  bodyss=bodyss.concat(controlConstraint.connect2(bodyinposition({x:100,y:100},thingsp.thingss),bodyinposition({x:100,y:0},boxsp.boxss),1,1));
+  bodyss=bodyss.concat(controlConstraint.connect2(bodyinposition({x:100,y:0},boxsp.boxss),bodyinposition({x:0,y:0},thingsp.thingss),0,1));
   }catch(e){logs(e)}
 }
 generate()
+logs(Composite.allBodies(wheel)[0].position.x+","+Composite.allBodies(wheel)[0].position.y)
 //bodyss=bodyss.concat(connectAB());
 //function duplicates(arr) {
 //    return arr.filter((e,i) => arr.indexOf(e)!==arr.lastIndexOf(e) && arr.indexOf(e)===i);
@@ -641,7 +1125,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
     
     objectB=objectB || {};
     objectW=objectW || {};
-    let mwheel0 = Composite.create({ label: 'mwheel0' ,position: {x:xx,y:yy+30}}),
+    let mwheel0 = Composite.create({ label: {name:'mwheel0'} ,position: {x:xx,y:yy+30}}),//position为自定义
         body = Bodies.trapezoid(xx, yy, width, height, -10, {
             render:objectB,
             collisionFilter: {
@@ -669,6 +1153,7 @@ function wwheel(xx, yy, width, height, wheelSize, objectB, objectW) {
                     
     
     Composite.addBody(mwheel0, body);
+    mwheel0.label.connectpart = body;
     Composite.addBody(mwheel0, wheelA);
     Composite.addConstraint(mwheel0, axelA);
 
@@ -782,93 +1267,248 @@ Composite.add(engine.world, bodyss)
 */
 
 
-//运行(渲染)renderer
+//运行渲染器
 Render.run(render);
 //创建runner
 var runner = Runner.create();
-//运行engine
+//运行引擎
 Runner.run(runner, engine);
 
 //Engine.run(engine);
 //Render.run(render);
 
 
-class Scene {
-  offset = { x: 0, y: 0 }; // 拖动偏移
-  curOffset = { x: 0, y: 0 }; // 记录上一次的偏移量
-  x = 0; // 记录鼠标点击Canvas时的横坐标
-  y = 0; // 记录鼠标点击Canvas时的纵坐标
-  touchOffset2 = { x: 0, y: 0 };// 记录第二指触摸点击Canvas时的坐标
-  mousePosition = { x: 0, y: 0 };
-  maxScale = 8;
-  minScale = 0.4;
-  scaleStep = 0.2;
-  scale = 1;
-  preScale = 1;
-  isMove = 0;
 
-  constructor(element=render.canvas, options = {
-    width: render.options.width,
-    height: render.options.height
-  }) {
-    this.canvas = element;
-    this.width = options.width;
-    this.height = options.height;
-    this.canvas.width = options.width;
-    this.canvas.height = options.height;
-    this.ctx = this.canvas.getContext('2d');
-    
-    this.onMousedown = this.onMousedown.bind(this);
-    this.onMousemove = this.onMousemove.bind(this);
-    this.onMouseup = this.onMouseup.bind(this);
-    this.canvas.addEventListener('mousedown', this.onMousedown);
-    this.onMousewheel = this.onMousewheel.bind(this);
-    this.canvas.addEventListener('mousewheel', this.onMousewheel);
-    
-    this.onTouchstart=this.onTouchstart.bind(this);
-    this.onTouchmove=this.onTouchmove.bind(this);
-    this.onTouchend=this.onTouchend.bind(this);
-    this.canvas.addEventListener('touchstart', this.onTouchstart);
-  }
 
-  //鼠标
-  onMousedown(e) {
-    if (e.button === 0) {
-      // 鼠标左键
-      this.x = e.x;
-      this.y = e.y
-      window.addEventListener('mousemove', this.onMousemove);
-      window.addEventListener('mouseup', this.onMouseup);
-      //logs(this.x)
+var view=(function(){
+    //视野
+    let view={};
+    //初始化
+    view.position=Vector.create();
+    view.size=1;
+    view.body=undefined;
+    view.relativeposition=Vector.create();
+    view.isfollow=false;
+    let minsize=0.5;
+    let maxsize=50;
+    
+    view.csize=function(size){
+        if(size<minsize){
+            this.size=minsize;
+        }else if(size>maxsize){
+            this.size=maxsize;
+        }else{
+            this.size=size;
+        }
+    };
+    view.cposition=function(position){
+        this.position.x=position.x;
+        this.position.y=position.y;
+    };
+    view.update=function(){
+        let offsetleft=render.options.width/2*this.size;
+        let offsettop=render.options.height/2*this.size
+        Render.lookAt(render, {
+          min: { x: this.position.x-offsetleft, y: this.position.y-offsettop },
+          max: { x: this.position.x+offsetleft, y: this.position.y+offsettop }
+        });
+    };
+    
+    view.lookat=function(x,y,csize,mult){
+        if(csize!==0){
+            if(mult){
+              view.csize(view.size*csize);
+            }else{
+              view.csize(view.size+csize);
+            }
+        }
+        
+        let size=view.size;
+        if(view.isfollow){
+          view.relativeposition.x+=x*size;
+          view.relativeposition.y+=y*size
+        }else{
+          view.position.x+=x*size;
+          view.position.y+=y*size;
+        }
+        
+        view.update();
+        
+        build.gird.setposition(view.position)
+    };
+    
+    view.follow=function(){
+        if(view.isfollow){
+            Vector.add(view.body.position,view.relativeposition,view.position);
+            view.update();
+        }
+    };
+    
+    Events.on(runner, "beforeUpdate", view.follow);
+    
+    //跟随
+    render.canvas.addEventListener("dblclick",function(event){
+        view.isfollow=!view.isfollow;
+    },true);
+    
+    //记忆
+    let remember={
+        load(){
+            if(localStorage.view){
+                let thedata=JSON.parse(localStorage.view);
+                view.position.x=(thedata.position.x);
+                view.position.y=(thedata.position.y);
+                view.size=(thedata.size);
+                view.update();
+            }
+        },
+        save(){
+            localStorage.view=JSON.stringify({
+                position: view.position,
+                size: view.size
+            });
+        }
     }
-  }
-
-  onMousemove(e) {
-   this.offset.x = this.curOffset.x + (e.x - this.x);
-   this.offset.y = this.curOffset.y + (e.y - this.y);
-
-   //this.paint();
-   
-   let changex=render.canvas.offsetWidth/render.options.width;
-   let changey=render.canvas.offsetHeight/render.options.height;
-   slookat.lookat(-(e.x - this.x)/changex, -(e.y - this.y)/changey, 0);
-   this.x=e.x;
-   this.y=e.y;
-  }
-
-  onMouseup() {
-    this.curOffset.x = this.offset.x;
-    this.curOffset.y = this.offset.y;
-    //logs(this.curOffset.x)
-    window.removeEventListener('mousemove', this.onMousemove);
-    window.removeEventListener('mouseup', this.onMouseup);
-    this.remember();
-  }
-
+    remember.load();
+    
+    //输入相关
+    let input={
+      offset: Vector.create(), // 拖动偏移
+      curOffset: Vector.create(), // 记录上一次的偏移量
+      position: Vector.create(), // 记录鼠标点击Canvas时的坐标
+      touchOffset2: Vector.create(), // 记录第二指触摸点击Canvas时的坐标
+      mousePosition: Vector.create(), 
+      scaleStep: 0.2,
+      scale: 1,
+      preScale: 1,
+      isMove: 0,
+      onMousedown(e) {
+        if (e.button === 0) {
+          // 鼠标左键
+          input.position.x = e.x;
+          input.position.y = e.y;
+          window.addEventListener('mousemove', input.onMousemove);
+          window.addEventListener('mouseup', input.onMouseup);
+          //logs(input.position.x)
+        }
+      },
+      onMousemove(e) {
+       Vector.add(input.curOffset,Vector.sub(e,input.position),input.offset)
+    
+       let changex=render.canvas.offsetWidth/render.options.width;
+       let changey=render.canvas.offsetHeight/render.options.height;
+       view.lookat(-(e.x - input.position.x)/changex, -(e.y - input.position.y)/changey, 0);
+       input.position.x=e.x;
+       input.position.y=e.y;
+      },
+      onMouseup() {
+        input.curOffset.x = input.offset.x;
+        input.curOffset.y = input.offset.y;
+        //logs(input.curOffset.x)
+        window.removeEventListener('mousemove', input.onMousemove);
+        window.removeEventListener('mouseup', input.onMouseup);
+        remember.save();
+      },
+      onWheel(e){
+        //chrome1
+        // 记录当前鼠标点击的坐标
+        input.mousePosition.x = e.offsetX; 
+        input.mousePosition.y = e.offsetY; 
+        
+        // 计算缩放比例
+        let scaleFactor = 1+0.2*(Math.sign(event.deltaY) > 0 ? -1 : 1);
+        //计算偏移
+        let offset = {
+            x: -(input.mousePosition.x - render.options.width / 2) * (1 - scaleFactor),
+            y: -(input.mousePosition.y - render.options.height / 2) * (1 - scaleFactor)
+        };
+        
+        
+        Vector.sub(view.position,Vector.mult(offset,view.size),view.position);
+        view.lookat(0,0,scaleFactor,true);
+      },
+      onTouchstart(e) {
+        //e.preventDefault();
+        input.position.x = e.targetTouches[0].pageX;
+        input.position.y = e.targetTouches[0].pageY;
+        if(e.targetTouches[1]){
+          input.touchOffset2.x=e.targetTouches[1].pageX;
+          input.touchOffset2.y=e.targetTouches[1].pageY;
+        }
+        render.canvas.addEventListener('touchmove', input.onTouchmove);
+        render.canvas.addEventListener('touchend', input.onTouchend);
+      },
+      onTouchmove(e){
+        //e.preventDefault();
+        let changex=render.canvas.offsetWidth/render.options.width;
+        let changey=render.canvas.offsetHeight/render.options.height;
+        if(e.targetTouches[1]){
+          let page0old=input.position
+          let page1old=input.touchOffset2
+          let page0new=Vector.create(e.targetTouches[0].pageX,e.targetTouches[0].pageY)
+          let page1new=Vector.create(e.targetTouches[1].pageX,e.targetTouches[1].pageY)
+          let vold=Vector.sub(page1old,page0old)
+          let vnew=Vector.sub(page1new,page0new)
+          vold.d=Vector.magnitude(vold)
+          vnew.d=Vector.magnitude(vnew)
+          try{
+          let cpage=Vector.create(render.canvas.offsetWidth/2+render.canvas.offsetLeft, render.canvas.offsetHeight/2+render.canvas.offsetTop)
+          let cold=Vector.add(page0old,Vector.div(vold,2))
+          let cnew=Vector.add(page0new,Vector.div(vnew,2))
+          let move=Vector.sub(cold,cnew)
+          Vector.add(move,Vector.mult(Vector.normalise(Vector.sub(cnew,cpage)),(vnew.d-vold.d)/2),move)
+          view.lookat(move.x/changex,move.y/changey,(vold.d/vnew.d),true);}catch(e){alert(e)}
+          logs((vnew.d-vold.d)/2-(vold.d/vnew.d))
+          /*(
+              distance((input.position.x-input.touchOffset2.x), (input.position.y-input.touchOffset2.y)) /
+              distance((e.targetTouches[0].pageX-e.targetTouches[1].pageX), (e.targetTouches[0].pageY-e.targetTouches[1].pageY))
+          )*/
+          input.position.x = e.targetTouches[0].pageX;
+          input.position.y = e.targetTouches[0].pageY;
+          input.touchOffset2.x=e.targetTouches[1].pageX;
+          input.touchOffset2.y=e.targetTouches[1].pageY;
+        }else{
+          view.lookat(-(e.targetTouches[0].pageX - input.position.x)/changex, -(e.targetTouches[0].pageY - input.position.y)/changey, 0);
+          input.position.x = e.targetTouches[0].pageX;
+          input.position.y = e.targetTouches[0].pageY;
+        }
+        function distance(x,y){
+            return (x**2+y**2)**0.5;
+        }
+        input.isMove=1;
+        //input.offset.x = input.curOffset.x + (e.targetTouches[0].pageX - input.x);
+        //input.offset.y = input.curOffset.y + (e.targetTouches[0].pageY - input.y);
+        //input.paint();
+      },
+      onTouchend(){
+        input.curOffset.x = input.offset.x;
+        input.curOffset.y = input.offset.y;
+        render.canvas.removeEventListener('touchmove', input.onTouchmove);
+        render.canvas.removeEventListener('touchend', input.onTouchend);
+        remember.save();
+        if(input.isMove===0){
+          
+        }else{input.isMove=0;}
+      },
+      onTouchcancel(){
+      
+      },
+      remember(){
+        //...
+      }
+    };
+    //鼠标
+    render.canvas.addEventListener('mousedown', input.onMousedown,true);
+    render.canvas.addEventListener("wheel",input.onWheel,true);
+    render.canvas.addEventListener("touchstart",input.onTouchstart,true);
+    
+    
+    /*
   onMousewheel(e) {
+    //废弃的wheel事件
     try{
     e.preventDefault();
-  logs(e.wheelDelta)
+    logs(e.wheelDelta)
     this.mousePosition.x = e.offsetX; // 记录当前鼠标点击的横坐标
     this.mousePosition.y = e.offsetY; // 记录当前鼠标点击的纵坐标
     if (e.wheelDelta > 0) {
@@ -890,7 +1530,9 @@ class Scene {
     this.offset.x = this.mousePosition.x - ((this.mousePosition.x - this.offset.x) * this.scale) / this.preScale;
     this.offset.y = this.mousePosition.y - ((this.mousePosition.y - this.offset.y) * this.scale) / this.preScale;
     //slookat.lookat(this.offset.x,this.offset.y,this.scale)
-    slookat.lookat(0,0,-e.wheelDelta/Math.abs(e.wheelDelta)*parseFloat((this.scaleStep).toFixed(2)))
+    //slookat.lookat(0,0,-e.wheelDelta/Math.abs(e.wheelDelta)*parseFloat((this.scaleStep).toFixed(2)))
+    view.csize(Math.sign(e.wheelDelta)>0?1.2:0.2,true);
+    view.update();
   
     //this.ctx.translate(this.offset.x, this.offset.y);
     //this.ctx.scale(this.scale, this.scale);
@@ -899,128 +1541,12 @@ class Scene {
     this.curOffset.y = this.offset.y;
     }catch(e){logs(e)}
     logs(0)
-  }
-
-  // paint() {
-    // this.clear();
-    // this.ctx.translate(this.offset.x, this.offset.y);
-    // this.ctx.scale(this.scale, this.scale);
-    // this.draw();
-  // }
-
-
-  //触摸屏
-  onTouchstart(e) {
-    //e.preventDefault();
-    this.x = e.targetTouches[0].pageX;
-    this.y = e.targetTouches[0].pageY;
-    if(e.targetTouches[1]){
-      this.touchOffset2.x=e.targetTouches[1].pageX;
-      this.touchOffset2.y=e.targetTouches[1].pageY;
-    }
-    this.canvas.addEventListener('touchmove', this.onTouchmove);
-    this.canvas.addEventListener('touchend', this.onTouchend);
-  }
+  },*/
   
-  onTouchmove(e){
-    //e.preventDefault();
-    let changex=render.canvas.offsetWidth/render.options.width;
-    let changey=render.canvas.offsetHeight/render.options.height;
-    if(e.targetTouches[1]){
-      slookat.lookat(0,0,(Math.sqrt(Math.pow((this.x-this.touchOffset2.x)/changex,2) + Math.pow((this.y-this.touchOffset2.y)/changey,2)) / Math.sqrt(Math.pow((e.targetTouches[0].pageX-e.targetTouches[1].pageX)/changex,2) + Math.pow((e.targetTouches[0].pageY-e.targetTouches[1].pageY)/changey,2))),true);
-      this.x = e.targetTouches[0].pageX;
-      this.y = e.targetTouches[0].pageY;
-      this.touchOffset2.x=e.targetTouches[1].pageX;
-      this.touchOffset2.y=e.targetTouches[1].pageY;
-    }else{
-      slookat.lookat(-(e.targetTouches[0].pageX - this.x)/changex, -(e.targetTouches[0].pageY - this.y)/changey, 0);
-      this.x = e.targetTouches[0].pageX;
-      this.y = e.targetTouches[0].pageY;
-    }
-    this.isMove=1;
-    //this.offset.x = this.curOffset.x + (e.targetTouches[0].pageX - this.x);
-    //this.offset.y = this.curOffset.y + (e.targetTouches[0].pageY - this.y);
-    //this.paint();
-  }
-  
-  onTouchend(){
-    this.curOffset.x = this.offset.x;
-    this.curOffset.y = this.offset.y;
-    window.removeEventListener('touchmove', this.onTouchmove);
-    window.removeEventListener('touchend', this.onTouchend);
-    this.remember();
-    if(this.isMove===0){
-      
-    }else{this.isMove=0;}
-  }
-  
-  draw() {
-      //none  
-  }
-
-  clear() {
-    this.canvas.width = this.width;
-  }
-
-  paint() {
-    //this.clear();
-    //this.ctx.translate(this.offset.x, this.offset.y);
-    //this.draw();
-    slookat.lookat(this.offset.x, this.offset.y,0)
-  }
-  
-  remember() {
-    localStorage.slookat=slookat.x+","+slookat.y;
-  }
-}new Scene();
-
-
-var slookat={
-  x: render.options.width/2,
-  y: render.options.height/2,
-  size:1,
-  body:undefined,
-  cx:0,
-  cy:0,
-  lookat:function(x,y,csize,csizex){
-    if(csizex){
-      if(slookat.size*csize>1&&slookat.size*csize<50){
-        slookat.size*=csize;
-      }else if(slookat.size*csize<1){
-        slookat.size=1
-      }else if(slookat.size*csize>50){
-        slookat.size=50
-      }
-    }else if(slookat.size+csize>0.5&&slookat.size+csize<50){
-      slookat.size+=csize;
-    }
-    let size=slookat.size;
-    if(dgbyid("check").checked){
-      slookat.cx+=x*size;
-      slookat.cy+=y*size;
-    }else{
-      slookat.x+=x*size;
-      slookat.y+=y*size;
-    }
-    Render.lookAt(render, {
-      min: { x: slookat.x-render.options.width/2*size, y: slookat.y-render.options.height/2*size },
-      max: { x: slookat.x+render.options.width/2*size, y: slookat.y+render.options.height/2*size }
-    });
     
-    buildgird.move({x:slookat.x,y:slookat.y},true)
-  },
-  followthings:function(){
-    slookat.x=slookat.body.position.x+slookat.cx;
-    slookat.y=slookat.body.position.y+slookat.cy;
-    slookat.lookat(0,0,0)
-  }
-}
-if(localStorage.slookat){
-slookat.x=Number(localStorage.slookat.split(",")[0]);
-slookat.y=Number(localStorage.slookat.split(",")[1]);
-slookat.lookat(0,0,0);
-}
-
+    
+    return view;
+})();
 
 
 var camera;
@@ -1044,12 +1570,12 @@ for(let i of Composite.allBodies(engine.world)){
     break;
   }
 }
-slookat.body=camera;
+view.body=camera;
 
 var lastspeed=0;
 Events.on(runner, "beforeUpdate", function(){
 
-  if(dgbyid("check").checked){slookat.followthings()}
+  //if(dgbyid("check").checked){slookat.followthings()}
   
   let ctx=render.context;
   let fontsize=20;
@@ -1063,10 +1589,10 @@ Events.on(runner, "beforeUpdate", function(){
     "  速度: "+Math.round(camera.speed*10)/10,
     "  加速度: "+Math.round(getacceleration(camera.speed)*10)/10,
     "  位置: ("+Math.round(camera.position.x/100)+","+Math.round(camera.position.y/100)+")",
-    "  角度: "+Math.round(camera.angle/Math.PI*180*10)/10,
+    "  角度: "+Math.round(camera.angle/Math.PI*180%360*10)/10,
     "  角速度: "+Math.round(camera.angularSpeed*10)/10,
-    "视野大小: "+Math.round(slookat.size*5*100)/100,
-    "视野位置: ("+Math.round(slookat.x/100)+","+Math.round(slookat.y/100)+")",
+    "视野大小: "+Math.round(view.size*5*100)/100,
+    "视野位置: ("+Math.round(view.position.x/100)+","+Math.round(view.position.y/100)+")",
     "运行时间: "+Math.round(engine.timing.timestamp)
   ];
   for(let i in filltexts){
@@ -1097,53 +1623,75 @@ Events.on(engine, 'collisionStart', function(event) {
 
     for (let i of pairs) {
         var pair = i;
-        if(pair.bodyA.id==35||pair.bodyB.id==35)
-        {
-        for (var ii = 0; ii < Object.keys(event.source.timing).length; ii++) {
-        //logs(Object.keys(event.source.timing)[ii]+":"+Object.values(event.source.timing)[ii])
-        }
-        //logs(pair.bodyA.speed*pair.bodyA.mass/0.01);
-        //logs(pair.bodyA.speed)
-        //logs(pair.bodyA.mass)
+        if(pair.bodyA.id==35||pair.bodyB.id==35){
+            for (var ii = 0; ii < Object.keys(event.source.timing).length; ii++) {
+            //logs(Object.keys(event.source.timing)[ii]+":"+Object.values(event.source.timing)[ii])
+            }
+            //logs(pair.bodyA.speed*pair.bodyA.mass/0.01);
+            //logs(pair.bodyA.speed)
+            //logs(pair.bodyA.mass)
         }
         //fs=mv f=mv/s
+        
+        if (pair.bodyA.label.name=="TNT" && pair.activeContacts.length > 0) {
+            let collision=pair.collision;
+
+            magnitude=Vector.magnitude(collision.penetration);
+            if(magnitude>10){
+                let b=pair.bodyA;
+                controlbody.explode(b.position,b.label.erange,b.label.eforce,b);
+            }
+        }
     }
     collisiontime.push(engine.timing.timestamp)
 });
-Events.on(engine, 'collisionEnd', function(event) {
+Events.on(engine, 'collisionActive', function(event) {
     var pairs = event.pairs;
 
     for (let i of pairs) {
-        ///
+        if(i.bodyB.label.name==="explode"){
+            log("explode")
+        }
     }
 });
 
+var viewtransition={
+  place:[],//{x:3,y:100},{x:4000,y:-25},{x:-300,y:605}
+  time:[2000,300,2000],
+  move:function(){
+    if(this.place.length>0){
+      if(this.d()<30){
+        this.place.shift()
+        this.time.shift()
+      }else{
+        let v=Vector.mult(Vector.sub(this.place[0],view.position),10/this.time[0])
+        view.lookat(v.x,v.y,0.001)
+        logs(this.d())
+      }
+    }
+  },
+  d:function(){
+    let v=Vector.sub(this.place[0],view.position)
+    return (v.x**2+v.y**2)**0.5
+  }
+};
+setInterval("viewtransition.move()",10)
 //var mouse = Mouse.create(render.canvas);
 render.canvas.onclick=function(e){
   //logs(e.offsetX+"/"+e.offsetY)
   let clickpoint=clickworld({x:e.offsetX, y:e.offsetY})
-  logs(clickpoint.x)
   //{x:e.offsetX,y:e.offsetY}
-  controlbody.explode({x:clickpoint.x/lattice,y:clickpoint.y/lattice},200,0.4)
   let clickbody=Query.point(Composite.allBodies(engine.world), clickpoint)
   for(let i of clickbody){
-    logs(i.id)
     if(i.label.name==="TNT"){
-    //clickbody[i].explode()
-    controlbody.explode({x:i.position.x/lattice,y:i.position.y/lattice},i.erange,i.eforce,i)
-    }else if(i.label.name==="gird"){
-      
+      controlbody.explode(i.position,i.label.erange,i.label.eforce,i)
     }
   }
+  try{build.part.add(clickpoint,"mubox0")}catch(e){alert(e)}
   function clickworld(point){
-    return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width*slookat.size,
-    y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width*slookat.size }
+    return { x:render.bounds.min.x+point.x/render.canvas.offsetWidth*render.canvas.width*view.size,
+    y:render.bounds.min.y+point.y/render.canvas.offsetWidth*render.canvas.width*view.size }
   }
-}
-render.canvas.ondblclick=function(){
-  dgbyid("check").checked=(!dgbyid("check").checked);
-  slookat.cx=0;
-  slookat.cy=0;
 }
 
 //collides: pair,collided,bodyA,bodyB,parentA,parentB,depth,normal,tangent,penetration,supports
@@ -1151,9 +1699,9 @@ var controlbody={
   explode:function(point,radius,force,removebody){
     radius=radius||200;
     if(removebody){
-      Composite.remove(engine.world,removebody);
+      Composite.remove(engine.world,[removebody,...controlbody.getcst(removebody)]);
     }
-    let explodeball=Bodies.circle(point.x*lattice, point.y*lattice, radius, {
+    let explodeball=Bodies.circle(point.x, point.y, radius, {
       render:{
         visible:true,
         sprite: {
@@ -1166,6 +1714,9 @@ var controlbody={
           yScale: radius*2/1000
         }
       },
+      label:{
+        name:"explode"
+      },
       isSensor:true,
       isStatic:true
     });
@@ -1176,14 +1727,14 @@ var controlbody={
     for(let i of Query.collides(explodeball, Composite.allBodies(engine.world))){
       if(i.bodyA.id!==explodeball.id&&i.bodyA.isStatic===true){continue}
       if(i.bodyA.label.name==="TNT"){
-        controlbody.explode({x:i.bodyA.position.x/lattice,y:i.bodyA.position.y/lattice},i.bodyA.label.erange,i.bodyA.label.eforce,i.bodyA)
+        controlbody.explode({x:i.bodyA.position.x,y:i.bodyA.position.y},i.bodyA.label.erange,i.bodyA.label.eforce,i.bodyA)
       }
-      let v={x:i.bodyA.position.x-explodeball.position.x,y:i.bodyA.position.y-explodeball.position.y}
-      v.d=Math.sqrt(v.x**2+v.y**2);
-      v.m=(radius-v.d)/radius*force
+      let v=Vector.sub(i.bodyA.position,explodeball.position)
+      v.d=Vector.magnitude(v);
       if(v.d>radius){continue}
-      v.n=v.x>0?Math.atan2(v.y,v.x):-Math.atan2(v.y,v.x);
-      Body.applyForce( i.bodyA, i.bodyA.position, {x:v.m*Math.cos(v.n), y:v.m*Math.sin(v.n)});
+      v.m=(radius-v.d)/radius*force
+      //v.n=v.x>0?Math.atan2(v.y,v.x):-Math.atan2(v.y,v.x);
+      Body.applyForce( i.bodyA, i.bodyA.position, Vector.mult(Vector.normalise(v),v.m));
     }
   },
   addforce:function(thebody,m){
@@ -1193,6 +1744,15 @@ var controlbody={
   addvelocity:function(thebody,m){
     let n=thebody.angle;
     Body.setVelocity( thebody, {x:m*Math.cos(n), y:m*Math.sin(n)});
+  },
+  getcst(body){
+      let csts=[];
+      for(let cst of Composite.allConstraints(engine.world)){
+          if(cst.bodyA.id===body.id||cst.bodyB.id===body.id){
+              csts.push(cst);
+          }
+      }
+      return csts;
   }
 }
 
@@ -1213,7 +1773,7 @@ buttoncontrol.test(undefined, function () {
     //Matter.Body.setStatic(body, true)
 });
 buttoncontrol.test(undefined, function () {//旋转
-    Body.rotate( pig0, Math.PI/180*45);
+    Body.rotate( camera, Math.PI/180*45);
 });
 buttoncontrol.test(undefined, function () {//移动
     //Body.translate( mubox0, {x: 40, y: -20});
@@ -1222,7 +1782,7 @@ buttoncontrol.test(undefined, function () {//移动
 buttoncontrol.test(undefined, function () {//移动速度
     Body.setVelocity( mubox0, {x: 00, y: -20});
     Body.setVelocity( febox0, {x: 00, y: 20});
-    Body.setVelocity( pig0, {x: 10, y: -10});
+    Body.setVelocity( camera, {x: 10, y: -10});
 });
 buttoncontrol.test(undefined, function () {//旋转速度
     Body.setAngularVelocity( Composite.allBodies(wheel)[1], Math.PI/180*40);
@@ -1247,14 +1807,15 @@ buttoncontrol.test(undefined, function () {//施加力向右
     //Body.applyForce( obja, {x: obja.position.x, y: obja.position.y}, {x: 0.44, y: 0});
 });
 buttoncontrol.test(undefined, function () {//向上力
-    controlbody.addforce(pig0,-0.44);
+    controlbody.addforce(camera,-0.44);
 });
 buttoncontrol.test(undefined, function () {//摩擦
-  Object.assign(pig0,{
-    friction:0.05,
-    frictionAir:0.0005,
-    restitution:0.9
-  })
+  // Object.assign(camera,{
+    // friction:0.05,
+    // frictionAir:0.0005,
+    // restitution:0.9
+  // })
+  viewtransition.move()
 });
 buttoncontrol.test(undefined, function () {//暂停
 
@@ -1267,8 +1828,8 @@ buttoncontrol.test(undefined, function () {//暂停
 });
 
 function dqsa(qsqs){return document.querySelectorAll(qsqs);}
-function logs(e){
-dgbyid("log").innerHTML+=e+", ";
+function logs(e,br=true){
+dgbyid("log").innerHTML+=e+(br?"<br/>":", ");
 }
 
 
@@ -1294,6 +1855,9 @@ class Loop{
   stop(){
     clearInterval(this.run)
   }
+}
+for(let k of Object.keys(window)){
+    //logs(k+":"+window[k])
 }
 </script>
 
